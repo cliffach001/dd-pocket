@@ -132,6 +132,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return roles.includes(user.role);
   }, [user]);
 
+  // Auto logout after 10 minutes of inactivity
+  useEffect(() => {
+    if (!user) return;
+
+    let timeout: ReturnType<typeof setTimeout>;
+
+    const resetTimer = () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        logout();
+        addLog("Logout", "User logout otomatis karena tidak ada aktivitas selama 10 menit", "Dashboard", user);
+      }, 10 * 60 * 1000);
+    };
+
+    const events = ["mousemove", "mousedown", "click", "keydown", "touchstart", "scroll", "wheel"];
+    events.forEach((event) => window.addEventListener(event, resetTimer));
+
+    resetTimer();
+
+    return () => {
+      clearTimeout(timeout);
+      events.forEach((event) => window.removeEventListener(event, resetTimer));
+    };
+  }, [user, logout, addLog]);
+
   return (
     <AuthContext.Provider value={{ user, isLoading, login, logout, hasRole, refreshUser }}>
       {children}
