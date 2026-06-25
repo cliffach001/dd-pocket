@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DD-Pocket — Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* Additional login-specific styles */
+    .demo-info {
+      background: var(--gray-50);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-top: 20px;
+      border: 1px solid var(--gray-200);
+    }
+    .demo-info h4 {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+    .demo-info .demo-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 0;
+      font-size: 13px;
+      color: var(--gray-600);
+    }
+    .demo-info .demo-item .demo-role {
+      font-weight: 600;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .demo-info .demo-item .demo-role.admin { background: #ede9fe; color: #6d28d9; }
+    .demo-info .demo-item .demo-role.manager { background: #dbeafe; color: #1d4ed8; }
+    .demo-info .demo-item .demo-role.operator { background: #d1fae5; color: #047857; }
+    .demo-info .demo-creds {
+      font-family: monospace;
+      font-size: 12px;
+      color: var(--gray-400);
+    }
+
+    .login-decoration {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.1;
+      pointer-events: none;
+    }
+    .login-decoration.d1 {
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(13,148,136,0.6), transparent);
+      top: -100px;
+      right: -100px;
+    }
+    .login-decoration.d2 {
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(59,130,246,0.4), transparent);
+      bottom: -50px;
+      left: -50px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-decoration d1"></div>
+    <div class="login-decoration d2"></div>
+
+    <div class="login-container">
+      <div class="login-card">
+        <div class="login-header">
+          <div class="login-logo">
+            <i class="fas fa-bolt"></i>
+          </div>
+          <h1>DD-Pocket</h1>
+          <p>Monitoring LOTOTO &amp; Switch Gear Management</p>
+        </div>
+
+        <!-- Error Message -->
+        <div class="login-error" id="loginError">
+          <i class="fas fa-exclamation-circle"></i>
+          <span id="loginErrorMsg">Username atau password salah</span>
+        </div>
+
+        <!-- Role Selector -->
+        <div style="margin-bottom:24px">
+          <label style="display:block;font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:10px;text-align:center">
+            Pilih Role Login
+          </label>
+          <div class="role-selector" id="roleSelector">
+            <div class="role-card active" data-role="Admin">
+              <span class="icon">👑</span>
+              <span class="label">Admin</span>
+              <span class="badge-role">Full Access</span>
+            </div>
+            <div class="role-card" data-role="Manager">
+              <span class="icon">📋</span>
+              <span class="label">Manager</span>
+              <span class="badge-role">Management</span>
+            </div>
+            <div class="role-card" data-role="Operator">
+              <span class="icon">🔧</span>
+              <span class="label">Operator</span>
+              <span class="badge-role">Terbatas</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Login Form -->
+        <form id="loginForm" autocomplete="off">
+          <div class="form-group">
+            <label>Username</label>
+            <div class="input-wrapper">
+              <i class="fas fa-user"></i>
+              <input type="text" id="username" placeholder="Masukkan username" value="admin" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Password</label>
+            <div class="input-wrapper">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="password" placeholder="Masukkan password" value="admin123" required />
+              <button type="button" class="toggle-password" onclick="togglePassword()">
+                <i class="fas fa-eye" id="passwordIcon"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-options">
+            <label class="checkbox-wrapper">
+              <input type="checkbox" checked />
+              Ingat saya
+            </label>
+            <a href="#" class="forgot-link" onclick="alert('Hubungi admin untuk reset password')">Lupa password?</a>
+          </div>
+
+          <button type="submit" class="btn-login" id="btnLogin">
+            <i class="fas fa-sign-in-alt"></i>
+            <span>Masuk</span>
+          </button>
+        </form>
+
+        <!-- Demo Credentials -->
+        <div class="demo-info">
+          <h4><i class="fas fa-info-circle"></i> Akun Demo</h4>
+          <div class="demo-item">
+            <span><span class="demo-role admin">Admin</span> admin / admin123</span>
+          </div>
+          <div class="demo-item">
+            <span><span class="demo-role manager">Manager</span> manager / manager123</span>
+          </div>
+          <div class="demo-item">
+            <span><span class="demo-role operator">Operator</span> operator / operator123</span>
+          </div>
+        </div>
+
+        <div class="login-footer-text">
+          &copy; 2026 DD-Pocket. All rights reserved.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Redirect if already logged in
+    if (sessionStorage.getItem("ddp_current_user")) {
+      window.location.href = "app.html";
+    }
+
+    // Role selector
+    const roleCards = document.querySelectorAll(".role-card");
+    const roleMap = {
+      Admin: { username: "admin", password: "admin123" },
+      Manager: { username: "manager", password: "manager123" },
+      Operator: { username: "operator", password: "operator123" },
+    };
+
+    roleCards.forEach((card) => {
+      card.addEventListener("click", function () {
+        roleCards.forEach((c) => c.classList.remove("active"));
+        this.classList.add("active");
+        const role = this.dataset.role;
+        const creds = roleMap[role];
+        document.getElementById("username").value = creds.username;
+        document.getElementById("password").value = creds.password;
+      });
+    });
+
+    // Toggle password visibility
+    function togglePassword() {
+      const pw = document.getElementById("password");
+      const icon = document.getElementById("passwordIcon");
+      if (pw.type === "password") {
+        pw.type = "text";
+        icon.className = "fas fa-eye-slash";
+      } else {
+        pw.type = "password";
+        icon.className = "fas fa-eye";
+      }
+    }
+
+    // Login form submit
+    document.getElementById("loginForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const errorEl = document.getElementById("loginError");
+      const errorMsg = document.getElementById("loginErrorMsg");
+      const btn = document.getElementById("btnLogin");
+
+      // Simple validation
+      if (!username || !password) {
+        errorMsg.textContent = "Username dan password wajib diisi";
+        errorEl.classList.add("show");
+        return;
+      }
+
+      // Try to find user
+      const users = JSON.parse(localStorage.getItem("ddp_users") || "null");
+      let user = null;
+
+      if (users) {
+        user = users.find(
+          (u) => u.username === username && u.password === password && u.status === "Aktif"
+        );
+      }
+
+      // Fallback to hardcoded defaults if DB not initialized
+      if (!user) {
+        if (username === "admin" && password === "admin123") {
+          user = { id: 1, name: "Admin Utama", email: "admin@ddpocket.com", unit: "IT", department: "Teknologi Informasi", username: "admin", password: "admin123", role: "Admin", status: "Aktif" };
+        } else if (username === "manager" && password === "manager123") {
+          user = { id: 2, name: "Manajer Operasi", email: "manager@ddpocket.com", unit: "Operasi", department: "Produksi", username: "manager", password: "manager123", role: "Manager", status: "Aktif" };
+        } else if (username === "operator" && password === "operator123") {
+          user = { id: 3, name: "Operator Lapangan", email: "operator@ddpocket.com", unit: "Produksi", department: "Produksi", username: "operator", password: "operator123", role: "Operator", status: "Aktif" };
+        }
+      }
+
+      if (!user) {
+        errorMsg.textContent = "Username atau password salah, atau akun tidak aktif";
+        errorEl.classList.add("show");
+        return;
+      }
+
+      errorEl.classList.remove("show");
+
+      // Disable button & show loading
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+
+      // Save session
+      sessionStorage.setItem("ddp_current_user", JSON.stringify(user));
+
+      // Log activity
+      try {
+        const logs = JSON.parse(localStorage.getItem("ddp_activityLogs") || "[]");
+        logs.unshift({
+          id: logs.length + 1,
+          action: "Login",
+          user: user.name,
+          page: "Dashboard",
+          timestamp: new Date().toLocaleString("id-ID", {
+            year: "numeric", month: "2-digit", day: "2-digit",
+            hour: "2-digit", minute: "2-digit"
+          }),
+          details: "User login ke sistem",
+        });
+        localStorage.setItem("ddp_activityLogs", JSON.stringify(logs));
+      } catch (e) { /* ignore */ }
+
+      // Redirect
+      setTimeout(() => {
+        window.location.href = "app.html";
+      }, 500);
+    });
+  </script>
+</body>
+</html>

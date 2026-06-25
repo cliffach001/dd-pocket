@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DD-Pocket — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar Overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon"><i class="fas fa-bolt"></i></div>
+        <span class="brand-text">DD-Pocket</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Menu Utama</div>
+
+          <div class="nav-item active" data-page="dashboard">
+            <i class="fas fa-th-large"></i>
+            <span>Dashboard</span>
+          </div>
+          <div class="nav-item" data-page="lototo">
+            <i class="fas fa-lock"></i>
+            <span>Lototo</span>
+            <span class="nav-badge" id="navBadgeLototo">3</span>
+          </div>
+          <div class="nav-item" data-page="sgmaintenance">
+            <i class="fas fa-tools"></i>
+            <span>SG Maintenance</span>
+            <span class="nav-badge" id="navBadgeMaintenance">2</span>
+          </div>
+          <div class="nav-item" data-page="switchgear">
+            <i class="fas fa-server"></i>
+            <span>Switch Gear</span>
+          </div>
+          <div class="nav-item" data-page="laporan">
+            <i class="fas fa-file-alt"></i>
+            <span>Laporan Harian</span>
+          </div>
+          <div class="nav-item" data-page="aktivitas">
+            <i class="fas fa-history"></i>
+            <span>Aktifitas Log</span>
+          </div>
+          <div class="nav-item" data-page="pengguna">
+            <i class="fas fa-users"></i>
+            <span>Pengguna</span>
+          </div>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">AU</div>
+          <div class="user-details">
+            <div class="user-name">Admin Utama</div>
+            <div class="user-role role-badge admin">Admin</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <div class="main-content">
+      <!-- HEADER -->
+      <header class="app-header">
+        <div class="header-left">
+          <button class="btn-toggle-sidebar" id="btnMobileMenu" style="display:none">
+            <i class="fas fa-bars"></i>
+          </button>
+          <button class="btn-toggle-sidebar" id="btnToggleSidebar">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="header-title">
+            <h2>Dashboard</h2>
+            <p>Monitoring LOTOTO</p>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <button class="btn-icon" title="Notifikasi">
+            <i class="fas fa-bell"></i>
+            <span class="dot"></span>
+          </button>
+          <div class="header-user" id="btnLogout" title="Logout" style="cursor:pointer">
+            <div class="avatar">AU</div>
+            <div class="info">
+              <div class="name">Admin Utama</div>
+              <span class="role-badge admin">Admin</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- PAGE CONTENT -->
+      <div class="page-content">
+        <!-- ===== DASHBOARD ===== -->
+        <section class="page-section active" id="dashboard">
+          <div class="page-header">
+            <h1>Monitoring LOTOTO</h1>
+            <p>Monitoring pengamanan switch gear dan status LOTOTO pra maintenance</p>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon blue"><i class="fas fa-layer-group"></i></div>
+              <div class="stat-info">
+                <div class="stat-label">Total Pekerjaan</div>
+                <div class="stat-value" id="dash-total">0</div>
+                <div class="stat-change"><i class="fas fa-arrow-up"></i> Total semua SG</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+              <div class="stat-info">
+                <div class="stat-label">Lototo Aktif</div>
+                <div class="stat-value" id="dash-aktif">0</div>
+                <div class="stat-change"><i class="fas fa-arrow-up"></i> Dalam pengamanan</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon yellow"><i class="fas fa-wrench"></i></div>
+              <div class="stat-info">
+                <div class="stat-label">SG Maintenance</div>
+                <div class="stat-value" id="dash-maintenance">0</div>
+                <div class="stat-change"><i class="fas fa-clock"></i> Sedang maintenance</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon red"><i class="fas fa-check-double"></i></div>
+              <div class="stat-info">
+                <div class="stat-label">SG Selesai</div>
+                <div class="stat-value" id="dash-selesai">0</div>
+                <div class="stat-change"><i class="fas fa-check"></i> Selesai maintenance</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-section">
+            <div class="chart-card">
+              <div class="card-header">
+                <h3><i class="fas fa-chart-pie" style="color:var(--primary)"></i> Overview Status</h3>
+                <span class="card-action">Lihat Detail</span>
+              </div>
+              <div class="chart-wrapper">
+                <div style="width:200px;height:200px;position:relative">
+                  <canvas id="donutChart"></canvas>
+                </div>
+                <div class="chart-legend" id="chartLegend">
+                  <div class="legend-item">
+                    <span class="legend-dot" style="background:#3b82f6"></span>
+                    <span>Aktif</span>
+                    <span class="legend-value">0</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-dot" style="background:#f59e0b"></span>
+                    <span>Maintenance</span>
+                    <span class="legend-value">0</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-dot" style="background:#10b981"></span>
+                    <span>Selesai</span>
+                    <span class="legend-value">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="chart-card">
+              <div class="card-header">
+                <h3><i class="fas fa-info-circle" style="color:var(--secondary)"></i> Informasi Cepat</h3>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:16px;padding:8px 0">
+                <div style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--gray-50);border-radius:var(--radius-sm)">
+                  <div style="width:40px;height:40px;border-radius:10px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;color:var(--primary)">
+                    <i class="fas fa-shield-alt"></i>
+                  </div>
+                  <div>
+                    <div style="font-size:14px;font-weight:600;color:var(--gray-800)">Prosedur LOTOTO</div>
+                    <div style="font-size:12px;color:var(--gray-500)">Pastikan lockout/tagout sesuai prosedur</div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--gray-50);border-radius:var(--radius-sm)">
+                  <div style="width:40px;height:40px;border-radius:10px;background:var(--warning-light);display:flex;align-items:center;justify-content:center;color:var(--warning)">
+                    <i class="fas fa-exclamation-triangle"></i>
+                  </div>
+                  <div>
+                    <div style="font-size:14px;font-weight:600;color:var(--gray-800)">Maintenance Aktif</div>
+                    <div style="font-size:12px;color:var(--gray-500)"><span id="dash-maintenance2">0</span> switch gear sedang dalam perawatan</div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--gray-50);border-radius:var(--radius-sm)">
+                  <div style="width:40px;height:40px;border-radius:10px;background:var(--secondary-light);display:flex;align-items:center;justify-content:center;color:var(--secondary)">
+                    <i class="fas fa-clock"></i>
+                  </div>
+                  <div>
+                    <div style="font-size:14px;font-weight:600;color:var(--gray-800)">Last Updated</div>
+                    <div style="font-size:12px;color:var(--gray-500)">Data real-time monitoring switch gear</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <div class="table-header">
+              <h3><i class="fas fa-table" style="color:var(--primary)"></i> Status Switch Gear</h3>
+              <div class="table-actions">
+                <div class="search-box">
+                  <i class="fas fa-search"></i>
+                  <input type="text" id="dashSearch" placeholder="Cari switch gear..." oninput="filterTable('dashSearch','dashboard-table')" />
+                </div>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table id="dashboard-table">
+                <thead>
+                  <tr>
+                    <th>Switch Gear</th>
+                    <th>Lokasi</th>
+                    <th>Unit</th>
+                    <th>PIC</th>
+                    <th>Peminta</th>
+                    <th>Waktu Aktif</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== LOTOTO ===== -->
+        <section class="page-section" id="lototo">
+          <div class="page-header">
+            <h1>Monitoring LOTOTO Aktif</h1>
+            <p>Daftar switch gear yang saat ini dalam status pengamanan LOTOTO.</p>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon blue"><i class="fas fa-layer-group"></i></div>
+              <div class="stat-info">
+                <div class="stat-label">Total Pekerjaan</div>
+                <div class="stat-value" id="loto-total">0</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+              <div class="stat-info">
+                <div class="stat-label">Lototo Aktif</div>
+                <div class="stat-value" id="loto-aktif">0</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon yellow"><i class="fas fa-wrench"></i></div>
+              <div class="stat-info">
+                <div class="stat-label">SG Maintenance</div>
+                <div class="stat-value" id="loto-maintenance">0</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon red"><i class="fas fa-check-double"></i></div>
+              <div class="stat-info">
+                <div class="stat-label">SG Selesai</div>
+                <div class="stat-value" id="loto-selesai">0</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <div class="table-header">
+              <h3><i class="fas fa-lock" style="color:var(--primary)"></i> Daftar LOTOTO Aktif</h3>
+              <div class="table-actions">
+                <div class="search-box">
+                  <i class="fas fa-search"></i>
+                  <input type="text" id="lotoSearch" placeholder="Cari..." oninput="filterTable('lotoSearch','lototo-table')" />
+                </div>
+                <button class="btn btn-primary btn-sm admin-only" onclick="openSGModal()">
+                  <i class="fas fa-plus"></i> Tambah
+                </button>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table id="lototo-table">
+                <thead>
+                  <tr>
+                    <th>Switch Gear</th>
+                    <th>Lokasi</th>
+                    <th>Unit</th>
+                    <th>Status</th>
+                    <th>PIC</th>
+                    <th>No. Notif</th>
+                    <th>No. Lototo</th>
+                    <th>Peminta</th>
+                    <th>Waktu Aktif</th>
+                    <th>Gambar</th>
+                    <th>Keterangan</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Prosedur LOTOTO -->
+          <div class="procedure-section">
+            <div class="procedure-card">
+              <h3><i class="fas fa-list-ol" style="color:var(--primary)"></i> Prosedur LOTOTO</h3>
+              <div class="procedure-steps">
+                <div class="procedure-step">
+                  <div class="step-number">1</div>
+                  <div class="step-content">
+                    <h4>Identifikasi Sumber Energi</h4>
+                    <p>Identifikasi semua sumber energi yang perlu diamankan</p>
+                  </div>
+                </div>
+                <div class="procedure-step">
+                  <div class="step-number">2</div>
+                  <div class="step-content">
+                    <h4>Lockout / Tagout</h4>
+                    <p>Pasang gembok dan tag pada switch gear yang diamankan</p>
+                  </div>
+                </div>
+                <div class="procedure-step">
+                  <div class="step-number">3</div>
+                  <div class="step-content">
+                    <h4>Verifikasi Nol Energi</h4>
+                    <p>Verifikasi bahwa semua energi telah diamankan (zero energy)</p>
+                  </div>
+                </div>
+                <div class="procedure-step">
+                  <div class="step-number">4</div>
+                  <div class="step-content">
+                    <h4>Mulai Pekerjaan</h4>
+                    <p>Pekerjaan maintenance dapat dimulai setelah verifikasi</p>
+                  </div>
+                </div>
+                <div class="procedure-step">
+                  <div class="step-number">5</div>
+                  <div class="step-content">
+                    <h4>Selesaikan & Lepas</h4>
+                    <p>Selesaikan pekerjaan, lepas gembok/tag, dan nyalakan kembali</p>
+                  </div>
+                </div>
+                <div class="procedure-step">
+                  <div class="step-number">6</div>
+                  <div class="step-content">
+                    <h4>Dokumentasi</h4>
+                    <p>Catat dan dokumentasikan seluruh proses LOTOTO</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== SG MAINTENANCE ===== -->
+        <section class="page-section" id="sgmaintenance">
+          <div class="page-header">
+            <h1>Monitoring SG Maintenance</h1>
+            <p>Daftar switch gear yang saat ini dalam status Maintenance.</p>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon blue"><i class="fas fa-layer-group"></i></div>
+              <div class="stat-info">
+                <div class="stat-label">Total Pekerjaan</div>
+                <div class="stat-value" id="sgm-total">0</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+              <div class="stat-info">
+                <div class="stat-label">Lototo Aktif</div>
+                <div class="stat-value" id="sgm-aktif">0</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon yellow"><i class="fas fa-wrench"></i></div>
+              <div class="stat-info">
+                <div class="stat-label">SG Maintenance</div>
+                <div class="stat-value" id="sgm-maintenance">0</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon red"><i class="fas fa-check-double"></i></div>
+              <div class="stat-info">
+                <div class="stat-label">SG Selesai</div>
+                <div class="stat-value" id="sgm-selesai">0</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <div class="table-header">
+              <h3><i class="fas fa-tools" style="color:var(--primary)"></i> Daftar SG Maintenance</h3>
+              <div class="table-actions">
+                <div class="search-box">
+                  <i class="fas fa-search"></i>
+                  <input type="text" id="sgmSearch" placeholder="Cari..." oninput="filterTable('sgmSearch','sgm-table')" />
+                </div>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table id="sgm-table">
+                <thead>
+                  <tr>
+                    <th>Switch Gear</th>
+                    <th>Lokasi</th>
+                    <th>Unit</th>
+                    <th>Status</th>
+                    <th>PIC</th>
+                    <th>No. Notif</th>
+                    <th>No. Lototo</th>
+                    <th>Peminta</th>
+                    <th>Waktu Aktif</th>
+                    <th>Gambar</th>
+                    <th>Keterangan</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== SWITCH GEAR ===== -->
+        <section class="page-section" id="switchgear">
+          <div class="page-header">
+            <h1>Daftar Switch Gear</h1>
+            <p>Daftar switch gear yang saat ini dalam status Maintenance.</p>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon blue"><i class="fas fa-server"></i></div>
+              <div class="stat-info">
+                <div class="stat-label">Total SG Tonasa 2/3</div>
+                <div class="stat-value" id="sg-t23">0</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon green"><i class="fas fa-server"></i></div>
+              <div class="stat-info">
+                <div class="stat-label">Total SG Tonasa 4</div>
+                <div class="stat-value" id="sg-t4">0</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon yellow"><i class="fas fa-server"></i></div>
+              <div class="stat-info">
+                <div class="stat-label">Total SG Tonasa 5</div>
+                <div class="stat-value" id="sg-t5">0</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon red"><i class="fas fa-server"></i></div>
+              <div class="stat-info">
+                <div class="stat-label">Total SG Lain</div>
+                <div class="stat-value" id="sg-lain">0</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tonasa 2/3 -->
+          <div class="table-wrapper">
+            <div class="table-header">
+              <h3><i class="fas fa-table"></i> Tonasa 2/3</h3>
+              <div class="table-actions">
+                <button class="btn btn-primary btn-sm admin-only" onclick="openSGModal()">
+                  <i class="fas fa-plus"></i> Tambah Data
+                </button>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table id="sg-table-tonasa23">
+                <thead>
+                  <tr>
+                    <th>Switch Gear</th>
+                    <th>Lokasi</th>
+                    <th>Unit</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tonasa 4 -->
+          <div class="table-wrapper">
+            <div class="table-header">
+              <h3><i class="fas fa-table"></i> Tonasa 4</h3>
+              <div class="table-actions">
+                <button class="btn btn-primary btn-sm admin-only" onclick="openSGModal()">
+                  <i class="fas fa-plus"></i> Tambah Data
+                </button>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table id="sg-table-tonasa4">
+                <thead>
+                  <tr>
+                    <th>Switch Gear</th>
+                    <th>Lokasi</th>
+                    <th>Unit</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tonasa 5 -->
+          <div class="table-wrapper">
+            <div class="table-header">
+              <h3><i class="fas fa-table"></i> Tonasa 5</h3>
+              <div class="table-actions">
+                <button class="btn btn-primary btn-sm admin-only" onclick="openSGModal()">
+                  <i class="fas fa-plus"></i> Tambah Data
+                </button>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table id="sg-table-tonasa5">
+                <thead>
+                  <tr>
+                    <th>Switch Gear</th>
+                    <th>Lokasi</th>
+                    <th>Unit</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- SG Lainnya -->
+          <div class="table-wrapper">
+            <div class="table-header">
+              <h3><i class="fas fa-table"></i> SG Lainnya</h3>
+              <div class="table-actions">
+                <button class="btn btn-primary btn-sm admin-only" onclick="openSGModal()">
+                  <i class="fas fa-plus"></i> Tambah Data
+                </button>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table id="sg-table-sglainnya">
+                <thead>
+                  <tr>
+                    <th>Switch Gear</th>
+                    <th>Lokasi</th>
+                    <th>Unit</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== LAPORAN HARIAN ===== -->
+        <section class="page-section" id="laporan">
+          <div class="page-header">
+            <h1>Laporan Harian</h1>
+            <p>Laporan harian kegiatan maintenance dan LOTOTO.</p>
+          </div>
+
+          <div class="table-wrapper">
+            <div class="empty-state" style="padding:80px 20px">
+              <i class="fas fa-file-excel" style="font-size:56px;color:var(--gray-300)"></i>
+              <h3>Halaman Laporan Harian</h3>
+              <p>Halaman ini dapat diisi dengan laporan harian sesuai kebutuhan. Silakan hubungi pengembang untuk menambahkan fitur laporan.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== AKTIVITAS LOG ===== -->
+        <section class="page-section" id="aktivitas">
+          <div class="page-header">
+            <h1>Laporan Aktifitas</h1>
+            <p>Riwayat dan laporan aktivitas pengamanan LOTOTO serta maintenance switch gear.</p>
+          </div>
+
+          <div class="table-wrapper">
+            <div class="table-header">
+              <h3><i class="fas fa-history" style="color:var(--primary)"></i> Riwayat Aktivitas</h3>
+              <div class="table-actions">
+                <div class="search-box">
+                  <i class="fas fa-search"></i>
+                  <input type="text" id="aktifitasSearch" placeholder="Cari aktivitas..." oninput="filterTable('aktifitasSearch','aktivitas-table')" />
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="location.reload()">
+                  <i class="fas fa-sync"></i> Refresh
+                </button>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table id="aktivitas-table">
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>Aksi</th>
+                    <th>User</th>
+                    <th>Halaman</th>
+                    <th>Detail</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== PENGGUNA ===== -->
+        <section class="page-section" id="pengguna">
+          <div class="page-header">
+            <h1>Daftar Pengguna</h1>
+            <p>Kelola akun pengguna dan hak akses ke website.</p>
+          </div>
+
+          <div class="table-wrapper">
+            <div class="table-header">
+              <h3><i class="fas fa-users" style="color:var(--primary)"></i> Manajemen Pengguna</h3>
+              <div class="table-actions">
+                <div class="search-box">
+                  <i class="fas fa-search"></i>
+                  <input type="text" id="penggunaSearch" placeholder="Cari pengguna..." oninput="filterTable('penggunaSearch','pengguna-table')" />
+                </div>
+                <button class="btn btn-primary btn-sm admin-only" onclick="openUserModal()">
+                  <i class="fas fa-plus"></i> Tambah Pengguna
+                </button>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table id="pengguna-table">
+                <thead>
+                  <tr>
+                    <th>Nama Lengkap</th>
+                    <th>Email</th>
+                    <th>Unit Kerja</th>
+                    <th>Departemen</th>
+                    <th>Username</th>
+                    <th>Password</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL ===== -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modalTitle"><i class="fas fa-plus-circle" style="color:var(--primary)"></i> Tambah Data</h3>
+        <button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+      </div>
+
+      <form id="modalForm">
+        <!-- Switch Gear Form -->
+        <div id="sgForm" style="display:none">
+          <div class="modal-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Nama Switch Gear</label>
+                <input type="text" id="sg-name" placeholder="Contoh: SG-MV-01" required />
+              </div>
+              <div class="form-group">
+                <label>Lokasi</label>
+                <input type="text" id="sg-location" placeholder="Contoh: Area Transformer" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Unit</label>
+                <select id="sg-unit" required>
+                  <option value="">Pilih Unit</option>
+                  <option>Tonasa 2/3</option>
+                  <option>Tonasa 4</option>
+                  <option>Tonasa 5</option>
+                  <option>SG Lainnya</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Status</label>
+                <select id="sg-status" required>
+                  <option value="Aktif">Aktif</option>
+                  <option value="Maintenance">Maintenance</option>
+                  <option value="Selesai">Selesai</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>PIC</label>
+                <input type="text" id="sg-pic" placeholder="Nama PIC" required />
+              </div>
+              <div class="form-group">
+                <label>Peminta</label>
+                <input type="text" id="sg-requester" placeholder="Nama peminta" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>No. Notifikasi</label>
+                <input type="text" id="sg-notif" placeholder="NOTIF-2026-001" />
+              </div>
+              <div class="form-group">
+                <label>No. Lototo</label>
+                <input type="text" id="sg-lototo" placeholder="LT-2026-001" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Keterangan</label>
+              <textarea id="sg-desc" placeholder="Deskripsi pekerjaan..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i> Simpan
+            </button>
+          </div>
+        </div>
+
+        <!-- User Form -->
+        <div id="userForm" style="display:none">
+          <div class="modal-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Nama Lengkap</label>
+                <input type="text" id="user-name" placeholder="Nama lengkap" required />
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="user-email" placeholder="email@domain.com" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Unit Kerja</label>
+                <select id="user-unit" required>
+                  <option value="">Pilih Unit</option>
+                  <option>IT</option>
+                  <option>Operasi</option>
+                  <option>Produksi</option>
+                  <option>Tonasa 2/3</option>
+                  <option>Tonasa 4</option>
+                  <option>Tonasa 5</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Departemen</label>
+                <input type="text" id="user-dept" placeholder="Departemen" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="user-username" placeholder="username" required />
+              </div>
+              <div class="form-group">
+                <label>Password</label>
+                <input type="text" id="user-password" placeholder="password" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Role</label>
+                <select id="user-role" required>
+                  <option value="">Pilih Role</option>
+                  <option value="Admin">Admin</option>
+                  <option value="Manager">Manager</option>
+                  <option value="Operator">Operator</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Status</label>
+                <select id="user-status" required>
+                  <option value="Aktif">Aktif</option>
+                  <option value="Nonaktif">Nonaktif</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i> Simpan
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== SCRIPTS ===== -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
