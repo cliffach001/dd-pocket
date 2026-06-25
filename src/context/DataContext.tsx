@@ -455,11 +455,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        await supabase.from(approval.table_name).update(updatePayload).eq("id", approval.record_id);
+        await supabase.from(approval.table_name as "switch_gears").update(updatePayload).eq("id", approval.record_id);
       } else if (approval.action_type === "delete") {
-        await supabase.from(approval.table_name).delete().eq("id", approval.record_id);
+        await supabase.from(approval.table_name as "switch_gears").delete().eq("id", approval.record_id);
       } else if (approval.action_type === "create" && approval.new_data) {
-        await supabase.from(approval.table_name).insert(approval.new_data);
+        await supabase.from(approval.table_name as "switch_gears").insert(approval.new_data);
       }
 
       // Update approval status
