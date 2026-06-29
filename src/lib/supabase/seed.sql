@@ -10,8 +10,7 @@ INSERT INTO users (name, email, unit, department, username, password, role, stat
   ('Budi Santoso', 'budi@ddpocket.com', 'Tonasa 2/3', 'Teknik', 'budi', 'budi123', 'Operator', 'Aktif'),
   ('Citra Dewi', 'citra@ddpocket.com', 'Tonasa 4', 'Teknik', 'citra', 'citra123', 'Operator', 'Aktif'),
   ('Eko Prasetyo', 'eko@ddpocket.com', 'Tonasa 5', 'Produksi', 'eko', 'eko123', 'Operator', 'Nonaktif'),
-  ('Fajar Nugroho', 'fajar@ddpocket.com', 'IT', 'Teknologi Informasi', 'fajar', 'fajar123', 'Manager', 'Aktif'),
-  ('Tamu Visitasi', 'visitor@ddpocket.com', 'Umum', 'Umum', 'visitor', 'visitor123', 'Visitor', 'Aktif')
+  ('Fajar Nugroho', 'fajar@ddpocket.com', 'IT', 'Teknologi Informasi', 'fajar', 'fajar123', 'Manager', 'Aktif')
 ON CONFLICT (username) DO NOTHING;
 
 -- SWITCH GEARS

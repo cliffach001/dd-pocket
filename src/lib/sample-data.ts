@@ -19,7 +19,6 @@ export const SAMPLE_USERS: User[] = [
   { id: 5, name: "Citra Dewi", email: "citra@ddpocket.com", unit: "Tonasa 4", department: "Teknik", username: "citra", password: "citra123", role: "Operator", status: "Aktif" },
   { id: 6, name: "Eko Prasetyo", email: "eko@ddpocket.com", unit: "Tonasa 5", department: "Produksi", username: "eko", password: "eko123", role: "Operator", status: "Nonaktif" },
   { id: 7, name: "Fajar Nugroho", email: "fajar@ddpocket.com", unit: "IT", department: "Teknologi Informasi", username: "fajar", password: "fajar123", role: "Manager", status: "Aktif" },
-  { id: 8, name: "Tamu Visitasi", email: "visitor@ddpocket.com", unit: "Umum", department: "Umum", username: "visitor", password: "visitor123", role: "Visitor", status: "Aktif" },
 ];
 
 export const SAMPLE_ACTIVITY_LOGS: ActivityLog[] = [
