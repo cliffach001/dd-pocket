@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { SwitchGear, User, ActivityLog, ChangeApproval, UserRole } from "@/types";
 import { getSupabaseClient } from "@/lib/supabase/client";
-import { notifyAdminAfterApprovalRequest, notifyUserAfterReview } from "@/lib/notify-admin";
+import { notifyAdminAfterApprovalRequest, notifyUserAfterReview, notifyDataChange } from "@/lib/notify-admin";
 
 interface DataContextType {
   switchGears: SwitchGear[];
@@ -231,6 +231,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const mapped = mapSG(inserted);
       setSwitchGears(prev => [mapped, ...prev]);
       addLog("Tambah SG", `Menambahkan ${data.name}`, "Switch Gear");
+      notifyDataChange({ title: "SG Baru", body: `${data.name} ditambahkan`, url: "/switch-gear" });
       return mapped;
     } catch (err) {
       console.error("addSwitchGear error:", err);
@@ -267,6 +268,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const mapped = mapSG(updated);
       setSwitchGears(prev => prev.map(s => s.id === id ? mapped : s));
       addLog("Edit SG", `Mengubah data ${mapped.name}`, "Switch Gear");
+      notifyDataChange({ title: "SG Diubah", body: `${mapped.name} diubah`, url: "/switch-gear" });
       return mapped;
     } catch (err) {
       console.error("updateSwitchGear error:", err);
@@ -282,7 +284,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
 
       setSwitchGears(prev => prev.filter(s => s.id !== id));
-      if (item) addLog("Hapus SG", `Menghapus ${item.name}`, "Switch Gear");
+      if (item) {
+        addLog("Hapus SG", `Menghapus ${item.name}`, "Switch Gear");
+        notifyDataChange({ title: "SG Dihapus", body: `${item.name} dihapus`, url: "/switch-gear" });
+      }
     } catch (err) {
       console.error("deleteSwitchGear error:", err);
     }
@@ -317,6 +322,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const mapped = mapUser(inserted);
       setUsers(prev => [mapped, ...prev]);
       addLog("Tambah User", `Menambahkan user baru: ${data.name}`, "Pengguna");
+      notifyDataChange({ title: "User Baru", body: `User ${data.name} ditambahkan`, url: "/pengguna" });
       return mapped;
     } catch (err) {
       console.error("addUser error:", err);
@@ -351,6 +357,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const mapped = mapUser(updated);
       setUsers(prev => prev.map(u => u.id === id ? mapped : u));
       addLog("Edit User", `Mengubah data user: ${mapped.name}`, "Pengguna");
+      notifyDataChange({ title: "User Diubah", body: `User ${mapped.name} diubah`, url: "/pengguna" });
 
       // If the updated user is the current logged-in user, refresh auth state
       const stored = localStorage.getItem("ddp_current_user");
@@ -376,7 +383,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
 
       setUsers(prev => prev.filter(u => u.id !== id));
-      if (item) addLog("Hapus User", `Menghapus user: ${item.name}`, "Pengguna");
+      if (item) {
+        addLog("Hapus User", `Menghapus user: ${item.name}`, "Pengguna");
+        notifyDataChange({ title: "User Dihapus", body: `User ${item.name} dihapus`, url: "/pengguna" });
+      }
     } catch (err) {
       console.error("deleteUser error:", err);
     }

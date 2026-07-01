@@ -10,6 +10,27 @@ interface NotifyPayload {
 }
 
 /**
+ * Kirim push notification broadcast ke semua subscriber
+ * Dipanggil setelah ada perubahan data (Tambah/Edit/Hapus SG, User, dll)
+ */
+export async function notifyDataChange(payload: NotifyPayload) {
+  try {
+    await fetch("/api/notifications/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: payload.title,
+        body: payload.body,
+        url: payload.url || "/",
+        tag: "dd-pocket-data-change",
+      }),
+    });
+  } catch (err) {
+    console.warn("[NotifyDataChange] Gagal kirim push:", err);
+  }
+}
+
+/**
  * Kirim push notification broadcast ke semua subscriber (Admin/Supervisor)
  * Dipanggil setelah approval request dibuat
  */
