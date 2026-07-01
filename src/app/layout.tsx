@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { DataProvider } from "@/context/DataContext";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 export const metadata: Metadata = {
   title: "Distribusi Daya — Monitoring LOTOTO",
@@ -36,7 +37,9 @@ export default function RootLayout({
       <body className="scrollbar-thin">
         <AuthProvider>
           <DataProvider>
-            {children}
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
           </DataProvider>
         </AuthProvider>
       </body>
