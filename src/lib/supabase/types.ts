@@ -131,6 +131,7 @@ export interface Database {
           status: string;
           requested_by: number;
           requested_by_name: string;
+          target_supervisor_id: number | null;
           reviewed_by: number | null;
           review_notes: string;
           created_at: string;
@@ -146,11 +147,13 @@ export interface Database {
           status?: string;
           requested_by: number;
           requested_by_name?: string;
+          target_supervisor_id?: number | null;
           reviewed_by?: number | null;
           review_notes?: string;
         };
         Update: {
           status?: string;
+          target_supervisor_id?: number | null;
           reviewed_by?: number | null;
           review_notes?: string;
         };

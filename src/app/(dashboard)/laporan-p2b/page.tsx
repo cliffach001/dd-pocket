@@ -90,6 +90,7 @@ function emptyForm(user?: { name: string; regu: string }): Omit<LaporanP2B, "id"
 export default function LaporanP2BPage() {
   const { user, hasRole } = useAuth();
   const canEdit = hasRole("Admin", "Supervisor", "Operator");
+  const canViewAllData = hasRole("Admin", "Supervisor", "Operator", "Manager");
   const isAdmin = hasRole("Admin");
   const isVisitor = user?.role === "Visitor";
   const userRegu = user?.regu || "";
@@ -102,22 +103,32 @@ export default function LaporanP2BPage() {
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
-  // Filter state
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  // Filter state — default ke bulan berjalan
+  const fmtLocal = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+  const today = new Date();
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+  const [startDate, setStartDate] = useState(fmtLocal(firstDay));
+  const [endDate, setEndDate] = useState(fmtLocal(lastDay));
   const [usernameFilter, setUsernameFilter] = useState("");
   const [kegiatanFilter, setKegiatanFilter] = useState("");
 
-  // Unique usernames from data (dibatasi sesuai regu untuk non-admin)
+  // Unique usernames from data (dibatasi sesuai regu untuk Manager/Visitor)
   const usernames = useMemo(() => {
     const names = new Set(
       data
-        .filter((r) => isAdmin || !userRegu || r.regu === userRegu)
+        .filter((r) => canViewAllData || !userRegu || r.regu === userRegu)
         .map((r) => r.nama)
         .filter(Boolean),
     );
     return Array.from(names).sort();
-  }, [data, isAdmin, userRegu]);
+  }, [data, canViewAllData, userRegu]);
 
   const isInspeksi = form.kegiatan === "Inspeksi";
   const isPengaturanBeban = form.kegiatan === "Pengaturan Beban";
@@ -174,8 +185,8 @@ export default function LaporanP2BPage() {
     if (!isInRange(r.tanggal_jam, startDate, endDate)) return false;
     if (usernameFilter && r.nama !== usernameFilter) return false;
     if (kegiatanFilter && r.kegiatan !== kegiatanFilter) return false;
-    // Operator/Supervisor hanya lihat data dari regu-nya sendiri (kecuali Dayshift)
-    if (!isAdmin && userRegu && userRegu !== "Dayshift" && r.regu !== userRegu) return false;
+    // Manager/Visitor hanya lihat data dari regu-nya sendiri (kecuali Dayshift)
+    if (!canViewAllData && userRegu && userRegu !== "Dayshift" && r.regu !== userRegu) return false;
     return true;
   });
 

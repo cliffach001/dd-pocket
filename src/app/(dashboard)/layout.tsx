@@ -26,7 +26,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isAdminOrSupervisor = hasRole("Admin", "Supervisor");
 
   const pendingApprovals = (approvals || []).filter((a) =>
-    a.status === "pending" && (!isSupervisor || a.regu === myRegu)
+    a.status === "pending" && (
+      !isSupervisor
+      || (a.target_supervisor_id && a.target_supervisor_id === user?.id)
+      || (!a.target_supervisor_id && a.regu === myRegu)
+    )
   );
   const myPendingCount = pendingApprovals.length;
 

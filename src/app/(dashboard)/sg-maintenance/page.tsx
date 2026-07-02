@@ -14,6 +14,7 @@ import { compressImage } from "@/lib/image";
 import { downloadPdf } from "@/lib/pdf";
 import { isInRange, formatPeriod, toIndonesianDate, toDatetimeLocal, getCurrentDatetimeLocal } from "@/lib/date";
 import { initGoogleDrive, uploadToGoogleDrive } from "@/lib/google-drive";
+import SupervisorCutiDialog from "@/components/ui/SupervisorCutiDialog";
 
 export default function SGMaintenancePage() {
   const { switchGears, addSwitchGear, updateSwitchGear, deleteSwitchGear, createApproval } = useData();
@@ -33,6 +34,14 @@ export default function SGMaintenancePage() {
   const [lightboxImg, setLightboxImg] = useState<string | null>(null);
   const [uploadingDrive, setUploadingDrive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pendingApproval, setPendingApproval] = useState<{
+    table_name: string;
+    record_id: number;
+    action_type: "edit" | "delete" | "create";
+    old_data: Record<string, any> | null;
+    new_data: Record<string, any> | null;
+  } | null>(null);
+  const [showCutiDialog, setShowCutiDialog] = useState(false);
 
   // Init Google Drive
   useEffect(() => {
@@ -118,18 +127,33 @@ export default function SGMaintenancePage() {
   const handleDelete = (sg: SwitchGear) => {
     if (confirm("Yakin ingin menghapus switch gear ini?")) {
       if (isOperator) {
-        createApproval({
+        setPendingApproval({
           table_name: "switch_gears",
           record_id: sg.id,
           action_type: "delete",
           old_data: sg,
           new_data: null,
         });
-        alert("Permintaan penghapusan telah dikirim ke Admin/Supervisor untuk disetujui.");
+        setShowCutiDialog(true);
       } else {
         deleteSwitchGear(sg.id);
       }
     }
+  };
+
+  const handleCutiConfirm = (targetSupervisorId: number | null) => {
+    if (pendingApproval) {
+      createApproval({ ...pendingApproval, target_supervisor_id: targetSupervisorId } as any);
+      const msg =
+        pendingApproval.action_type === "delete"
+          ? "Permintaan penghapusan telah dikirim ke Supervisor untuk disetujui."
+          : pendingApproval.action_type === "edit"
+          ? "Permintaan perubahan telah dikirim ke Supervisor untuk disetujui."
+          : "Permintaan penambahan telah dikirim ke Supervisor untuk disetujui.";
+      alert(msg);
+    }
+    setShowCutiDialog(false);
+    setPendingApproval(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -162,27 +186,27 @@ export default function SGMaintenancePage() {
     if (editId) {
       if (isOperator) {
         const oldItem = switchGears.find(s => s.id === editId);
-        createApproval({
+        setPendingApproval({
           table_name: "switch_gears",
           record_id: editId,
           action_type: "edit",
           old_data: oldItem || null,
           new_data: payload,
         });
-        alert("Permintaan perubahan telah dikirim ke Admin/Supervisor untuk disetujui.");
+        setShowCutiDialog(true);
       } else {
         updateSwitchGear(editId, payload);
       }
     } else {
         if (isOperator) {
-          createApproval({
+          setPendingApproval({
             table_name: "switch_gears",
             record_id: 0,
             action_type: "create",
             old_data: null,
             new_data: payload,
           });
-          alert("Permintaan penambahan telah dikirim ke Admin/Supervisor untuk disetujui.");
+          setShowCutiDialog(true);
         } else {
           addSwitchGear(payload);
         }
@@ -425,6 +449,13 @@ export default function SGMaintenancePage() {
           </div>
         </form>
       </Modal>
+
+      {/* Supervisor Cuti Dialog */}
+      <SupervisorCutiDialog
+        open={showCutiDialog}
+        onClose={() => { setShowCutiDialog(false); setPendingApproval(null); }}
+        onConfirm={handleCutiConfirm}
+      />
     </div>
   );
 }

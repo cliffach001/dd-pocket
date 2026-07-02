@@ -97,6 +97,7 @@ function mapApproval(row: any): ChangeApproval {
     status: row.status,
     requested_by: row.requested_by,
     requested_by_name: row.requested_by_name || "",
+    target_supervisor_id: row.target_supervisor_id ?? null,
     reviewed_by: row.reviewed_by,
     review_notes: row.review_notes || "",
     created_at: row.created_at,
@@ -403,6 +404,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     action_type: "edit" | "delete" | "create";
     old_data: Record<string, any> | null;
     new_data: Record<string, any> | null;
+    target_supervisor_id?: number | null;
   }) => {
     try {
       const stored = localStorage.getItem("ddp_current_user");
@@ -422,6 +424,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           requested_by: currentUser.id,
           requested_by_name: currentUser.name,
           regu: currentUser.regu || "",
+          target_supervisor_id: data.target_supervisor_id ?? null,
         })
         .select()
         .single();

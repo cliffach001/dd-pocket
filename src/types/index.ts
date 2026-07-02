@@ -52,6 +52,7 @@ export interface ChangeApproval {
   status: ApprovalStatus;
   requested_by: number;
   requested_by_name: string;
+  target_supervisor_id: number | null;
   reviewed_by: number | null;
   review_notes: string;
   created_at: string;
