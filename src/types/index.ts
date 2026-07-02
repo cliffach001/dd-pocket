@@ -79,7 +79,7 @@ export interface LaporanP2B {
   aktifitas: string;
   area: string;
   pic: string;
-  kegiatan: "Pengaturan Beban" | "Inspeksi";
+  kegiatan: "Pengaturan Beban" | "Inspeksi" | "Lainnya";
   kondisi: "" | "Normal" | "Rusak" | "Perbaikan";
   temuan: string;
   tindak_lanjut: string;

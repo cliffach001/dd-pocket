@@ -12,7 +12,7 @@ import type { LaporanP2B } from "@/types";
 
 const LOKASI_OPTIONS = ["Tonasa 2/3", "Tonasa 4", "Tonasa 5", "Lainnya"];
 const POSISI_POWER_OPTIONS = ["BTG", "PLN", "PLN ke BTG", "BTG ke PLN"];
-const KEGIATAN_OPTIONS = ["Pengaturan Beban", "Inspeksi"];
+const KEGIATAN_OPTIONS = ["Pengaturan Beban", "Inspeksi", "Lainnya"];
 const KONDISI_OPTIONS = ["Normal", "Rusak", "Perbaikan"];
 const LEVEL_TEGANGAN_OPTIONS = ["70 kV", "6,3 kV"];
 
@@ -78,6 +78,8 @@ export default function LaporanP2BPage() {
   }, [data, isAdmin, userRegu]);
 
   const isInspeksi = form.kegiatan === "Inspeksi";
+  const isPengaturanBeban = form.kegiatan === "Pengaturan Beban";
+  const isLainnya = form.kegiatan === "Lainnya";
 
   const fetchData = useCallback(async () => {
     try {
@@ -114,12 +116,16 @@ export default function LaporanP2BPage() {
 
   // ── Save (add / edit) ──
   const handleSave = async () => {
-    if (!form.lokasi || !form.area || !form.pic) {
-      alert("Lokasi, Unit/Area, dan PIC wajib diisi");
+    if (isLainnya && (!form.lokasi || !form.area)) {
+      alert("Lokasi dan Unit/Area wajib diisi");
       return;
     }
-    if (!isInspeksi && !form.posisi_power) {
+    if (isPengaturanBeban && !form.posisi_power) {
       alert("Posisi Power wajib diisi");
+      return;
+    }
+    if (!form.pic) {
+      alert("PIC wajib diisi");
       return;
     }
     setSaving(true);
@@ -200,7 +206,7 @@ export default function LaporanP2BPage() {
       aktifitas: item.aktifitas || "",
       area: item.area,
       pic: item.pic,
-      kegiatan: item.kegiatan as "Pengaturan Beban" | "Inspeksi",
+      kegiatan: item.kegiatan as "Pengaturan Beban" | "Inspeksi" | "Lainnya",
       temuan: item.temuan || "",
       tindak_lanjut: item.tindak_lanjut || "",
       keterangan: item.keterangan || "",
@@ -452,8 +458,22 @@ _Dibuat oleh ${user?.name || "-"}_`;
     ...aksiCol,
   ];
 
+  const lainnyaColumns = [
+    tanggalJamCol,
+    lokasiCol,
+    areaCol,
+    aktifitasCol,
+    picCol,
+    keteranganCol,
+    namaCol,
+    reguCol,
+    waCol,
+    ...aksiCol,
+  ];
+
   const pengaturanBebanData = filtered.filter((r) => r.kegiatan === "Pengaturan Beban");
   const inspeksiData = filtered.filter((r) => r.kegiatan === "Inspeksi");
+  const lainnyaData = filtered.filter((r) => r.kegiatan === "Lainnya");
 
   // ── Chart: jumlah inputan per nama ──
   const chartData = useMemo(() => {
@@ -591,6 +611,13 @@ _Dibuat oleh ${user?.name || "-"}_`;
             data={inspeksiData}
             searchPlaceholder="Cari data Inspeksi..."
           />
+          {/* Tabel Lainnya */}
+          <DataTable
+            title="Lainnya"
+            columns={lainnyaColumns}
+            data={lainnyaData}
+            searchPlaceholder="Cari data Lainnya..."
+          />
         </div>
       )}
 
@@ -611,12 +638,13 @@ _Dibuat oleh ${user?.name || "-"}_`;
               {/* Kegiatan */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Kegiatan *</label>
-                <select value={form.kegiatan} onChange={(e) => setForm({ ...emptyForm(user || undefined), kegiatan: e.target.value as "Pengaturan Beban" | "Inspeksi" })} className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all">
+                <select value={form.kegiatan} onChange={(e) => setForm({ ...emptyForm(user || undefined), kegiatan: e.target.value as "Pengaturan Beban" | "Inspeksi" | "Lainnya" })} className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all">
                   {KEGIATAN_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
               </div>
 
-              {/* Lokasi */}
+              {/* Lokasi — hanya untuk Lainnya */}
+              {isLainnya && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Lokasi *</label>
                 <select value={form.lokasi} onChange={(e) => setForm({ ...form, lokasi: e.target.value })} className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all">
@@ -624,8 +652,10 @@ _Dibuat oleh ${user?.name || "-"}_`;
                   {LOKASI_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
               </div>
+              )}
 
-              {/* Level Tegangan */}
+              {/* Level Tegangan — hanya untuk Pengaturan Beban */}
+              {isPengaturanBeban && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Level Tegangan</label>
                 <select value={form.level_tegangan} onChange={(e) => setForm({ ...form, level_tegangan: e.target.value as "" | "70 kV" | "6,3 kV" })} className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all">
@@ -633,18 +663,19 @@ _Dibuat oleh ${user?.name || "-"}_`;
                   {LEVEL_TEGANGAN_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
               </div>
+              )}
 
-              {/* Posisi Power — hanya tampil jika bukan Inspeksi */}
-              {!isInspeksi && (
+              {/* Posisi Power — hanya untuk Pengaturan Beban */}
+              {isPengaturanBeban && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Posisi Power *</label>
                   <select
                     value={form.posisi_power}
                     onChange={(e) => setForm({ ...form, posisi_power: e.target.value as "" | "BTG" | "PLN" | "PLN ke BTG" | "BTG ke PLN" })}
                     className={`w-full px-3.5 py-2.5 border-2 rounded-xl bg-gray-50 text-sm focus:bg-white focus:ring-4 outline-none transition-all ${
-                      form.posisi_power === "BTG"
+                      form.posisi_power === "BTG" || form.posisi_power === "PLN ke BTG"
                         ? "border-green-400 ring-green-500/20 text-green-700"
-                        : form.posisi_power === "PLN"
+                        : form.posisi_power === "PLN" || form.posisi_power === "BTG ke PLN"
                         ? "border-yellow-400 ring-yellow-500/20 text-yellow-700"
                         : "border-gray-200"
                     }`}
@@ -655,25 +686,29 @@ _Dibuat oleh ${user?.name || "-"}_`;
                 </div>
               )}
 
-              {/* Unit Pindah — hanya tampil jika bukan Inspeksi */}
-              {!isInspeksi && (
+              {/* Unit Pindah — hanya untuk Pengaturan Beban */}
+              {isPengaturanBeban && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Unit yang Pindah</label>
                   <input type="text" value={form.unit_pindah} onChange={(e) => setForm({ ...form, unit_pindah: e.target.value })} className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all" placeholder="Unit yang pindah" />
                 </div>
               )}
 
-              {/* Aktifitas */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Aktifitas</label>
-                <textarea value={form.aktifitas} onChange={(e) => setForm({ ...form, aktifitas: e.target.value })} rows={2} className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none" placeholder="Aktifitas" />
-              </div>
-
-              {/* Area */}
+              {/* Unit/Area — hanya untuk Lainnya */}
+              {isLainnya && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Unit/Area *</label>
                 <input type="text" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all" placeholder="Contoh: GG-01" />
               </div>
+              )}
+
+              {/* Aktifitas — hanya untuk Lainnya */}
+              {isLainnya && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Aktifitas</label>
+                <textarea value={form.aktifitas} onChange={(e) => setForm({ ...form, aktifitas: e.target.value })} rows={2} className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none" placeholder="Aktifitas" />
+              </div>
+              )}
 
               {/* Kondisi — hanya tampil jika Inspeksi */}
               {isInspeksi && (
@@ -705,11 +740,13 @@ _Dibuat oleh ${user?.name || "-"}_`;
                 </>
               )}
 
-              {/* Keterangan */}
+              {/* Keterangan — hanya untuk Lainnya */}
+              {isLainnya && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Keterangan</label>
                 <textarea value={form.keterangan} onChange={(e) => setForm({ ...form, keterangan: e.target.value })} rows={2} className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none" placeholder="Keterangan" />
               </div>
+              )}
 
               {/* Nama & Regu — read-only, dari user login */}
               <div className="grid grid-cols-2 gap-4">
