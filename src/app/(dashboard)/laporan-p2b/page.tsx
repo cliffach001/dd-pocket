@@ -116,12 +116,16 @@ export default function LaporanP2BPage() {
 
   // ── Save (add / edit) ──
   const handleSave = async () => {
-    if (isLainnya && (!form.lokasi || !form.area)) {
-      alert("Lokasi dan Unit/Area wajib diisi");
+    if ((isPengaturanBeban || isLainnya) && !form.lokasi) {
+      alert("Lokasi wajib diisi");
       return;
     }
     if (isPengaturanBeban && !form.posisi_power) {
       alert("Posisi Power wajib diisi");
+      return;
+    }
+    if (isPengaturanBeban && !form.area) {
+      alert("Unit/Area wajib diisi");
       return;
     }
     if (!form.pic) {
@@ -233,18 +237,21 @@ export default function LaporanP2BPage() {
     const detail =
       r.kegiatan === "Inspeksi"
         ? `Lokasi : _${r.lokasi}_
-Level Tegangan : _${r.level_tegangan || "-"}_
+Aktifitas : _${r.aktifitas || "-"}_
 Kondisi : _${r.kondisi || "-"}_
-Unit/Area : _${r.area}_
-PIC : _${r.pic}_
 Temuan : _${r.temuan || "-"}_
 Tindak Lanjut : _${r.tindak_lanjut || "-"}_
+PIC : _${r.pic}_
 Keterangan : _${r.keterangan || "-"}`
-        : `Lokasi : _${r.lokasi}_
+        : r.kegiatan === "Pengaturan Beban"
+        ? `Lokasi : _${r.lokasi}_
 Level Tegangan : _${r.level_tegangan || "-"}_
 Posisi Power : _${r.posisi_power || "-"}_
 Unit/Area : _${r.area}_
 Unit Pindah : _${r.unit_pindah || "-"}_
+PIC : _${r.pic}_
+Keterangan : _${r.keterangan || "-"}`
+        : `Lokasi : _${r.lokasi}_
 Aktifitas : _${r.aktifitas || "-"}_
 PIC : _${r.pic}_
 Keterangan : _${r.keterangan || "-"}_`;
@@ -431,9 +438,8 @@ _Dibuat oleh ${user?.name || "-"}_`;
     lokasiCol,
     levelTeganganCol,
     posisiPowerCol,
-    unitPindahCol,
-    aktifitasCol,
     areaCol,
+    unitPindahCol,
     picCol,
     keteranganCol,
     namaCol,
@@ -445,12 +451,11 @@ _Dibuat oleh ${user?.name || "-"}_`;
   const inspeksiColumns = [
     tanggalJamCol,
     lokasiCol,
-    levelTeganganCol,
+    aktifitasCol,
     kondisiCol,
-    areaCol,
-    picCol,
     temuanCol,
     tindakLanjutCol,
+    picCol,
     keteranganCol,
     namaCol,
     reguCol,
@@ -461,7 +466,6 @@ _Dibuat oleh ${user?.name || "-"}_`;
   const lainnyaColumns = [
     tanggalJamCol,
     lokasiCol,
-    areaCol,
     aktifitasCol,
     picCol,
     keteranganCol,
@@ -643,8 +647,8 @@ _Dibuat oleh ${user?.name || "-"}_`;
                 </select>
               </div>
 
-              {/* Lokasi — hanya untuk Lainnya */}
-              {isLainnya && (
+              {/* Lokasi — untuk Pengaturan Beban & Lainnya */}
+              {(isPengaturanBeban || isLainnya) && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Lokasi *</label>
                 <select value={form.lokasi} onChange={(e) => setForm({ ...form, lokasi: e.target.value })} className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all">
@@ -694,16 +698,16 @@ _Dibuat oleh ${user?.name || "-"}_`;
                 </div>
               )}
 
-              {/* Unit/Area — hanya untuk Lainnya */}
-              {isLainnya && (
+              {/* Unit/Area — untuk Pengaturan Beban (bukan Inspeksi/Lainnya) */}
+              {isPengaturanBeban && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Unit/Area *</label>
                 <input type="text" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all" placeholder="Contoh: GG-01" />
               </div>
               )}
 
-              {/* Aktifitas — hanya untuk Lainnya */}
-              {isLainnya && (
+              {/* Aktifitas — untuk Inspeksi & Lainnya */}
+              {(isInspeksi || isLainnya) && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Aktifitas</label>
                 <textarea value={form.aktifitas} onChange={(e) => setForm({ ...form, aktifitas: e.target.value })} rows={2} className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none" placeholder="Aktifitas" />
@@ -740,13 +744,11 @@ _Dibuat oleh ${user?.name || "-"}_`;
                 </>
               )}
 
-              {/* Keterangan — hanya untuk Lainnya */}
-              {isLainnya && (
+              {/* Keterangan */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Keterangan</label>
                 <textarea value={form.keterangan} onChange={(e) => setForm({ ...form, keterangan: e.target.value })} rows={2} className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none" placeholder="Keterangan" />
               </div>
-              )}
 
               {/* Nama & Regu — read-only, dari user login */}
               <div className="grid grid-cols-2 gap-4">
