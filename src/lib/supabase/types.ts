@@ -9,7 +9,7 @@ export interface Database {
           name: string;
           email: string;
           phone: string;
-          area: string;
+          unit: string;
           department: string;
           username: string;
           password: string;
@@ -23,7 +23,7 @@ export interface Database {
           name: string;
           email: string;
           phone?: string;
-          area?: string;
+          unit?: string;
           department?: string;
           username: string;
           password: string;
@@ -35,7 +35,7 @@ export interface Database {
           name?: string;
           email?: string;
           phone?: string;
-          area?: string;
+          unit?: string;
           department?: string;
           username?: string;
           password?: string;
@@ -50,7 +50,7 @@ export interface Database {
           id: number;
           name: string;
           location: string;
-          area: string;
+          unit: string;
           status: string;
           pic: string;
           requester: string;
@@ -66,7 +66,7 @@ export interface Database {
         Insert: {
           name: string;
           location?: string;
-          area?: string;
+          unit?: string;
           status?: string;
           pic?: string;
           requester?: string;
@@ -80,7 +80,7 @@ export interface Database {
         Update: {
           name?: string;
           location?: string;
-          area?: string;
+          unit?: string;
           status?: string;
           pic?: string;
           requester?: string;

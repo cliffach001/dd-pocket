@@ -40,12 +40,12 @@ export default function SGMaintenancePage() {
     if (clientId) initGoogleDrive(clientId);
   }, []);
   const [form, setForm] = useState<{
-    name: string; location: string; area: string; status: SGStatus;
+    name: string; location: string; unit: string; status: SGStatus;
     pic: string; requester: string; notifNo: string; lototoNo: string;
     description: string; image: string;
     activeTime: string; finishTime: string;
   }>({
-    name: "", location: "", area: "Tonasa 2/3", status: "Maintenance",
+    name: "", location: "", unit: "Tonasa 2/3", status: "Maintenance",
     pic: "", requester: "", notifNo: "", lototoNo: "", description: "", image: "",
     activeTime: "", finishTime: "",
   });
@@ -59,7 +59,7 @@ export default function SGMaintenancePage() {
   const handleDownloadPdf = () => {
     const pdfColumns = ["Switch Gear", "Lokasi", "Unit", "Status", "PIC", "No. Notif", "No. Lototo", "Peminta", "Waktu Aktif", "Waktu Selesai", "Keterangan"];
     const rows = filteredSG.map((s) => [
-      s.name, s.location, s.area, s.status, s.pic, s.notifNo, s.lototoNo, s.requester, s.activeTime, s.finishTime, s.description,
+      s.name, s.location, s.unit, s.status, s.pic, s.notifNo, s.lototoNo, s.requester, s.activeTime, s.finishTime, s.description,
     ]);
     downloadPdf({
       title: "Laporan Monitoring Switch Gear",
@@ -74,7 +74,7 @@ export default function SGMaintenancePage() {
     setEditId(null);
     setImagePreview("");
     setForm({
-      name: "", location: "", area: "Tonasa 2/3", status: "Maintenance",
+      name: "", location: "", unit: "Tonasa 2/3", status: "Maintenance",
       pic: "", requester: "", notifNo: "", lototoNo: "", description: "", image: "",
       activeTime: getCurrentDatetimeLocal(), finishTime: "",
     });
@@ -85,7 +85,7 @@ export default function SGMaintenancePage() {
     setEditId(sg.id);
     setImagePreview(sg.image || "");
     setForm({
-      name: sg.name, location: sg.location, area: sg.area, status: sg.status,
+      name: sg.name, location: sg.location, unit: sg.unit, status: sg.status,
       pic: sg.pic, requester: sg.requester, notifNo: sg.notifNo, lototoNo: sg.lototoNo,
       description: sg.description, image: sg.image || "",
       activeTime: toDatetimeLocal(sg.activeTime) || getCurrentDatetimeLocal(),
@@ -211,7 +211,7 @@ export default function SGMaintenancePage() {
   const columns = [
     { key: "name", header: "Switch Gear", render: (s: SwitchGear) => <span className="font-semibold">{s.name}</span> },
     { key: "location", header: "Lokasi", render: (s: SwitchGear) => s.location },
-    { key: "area", header: "Area", render: (s: SwitchGear) => s.area },
+    { key: "unit", header: "Unit", render: (s: SwitchGear) => s.unit },
     { key: "status", header: "Status", render: (s: SwitchGear) => <StatusBadge status={s.status} /> },
     { key: "pic", header: "PIC", render: (s: SwitchGear) => s.pic },
     { key: "notifNo", header: "No. Notif", render: (s: SwitchGear) => s.notifNo },
@@ -328,7 +328,7 @@ export default function SGMaintenancePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-gray-600 mb-1">Unit</label>
-              <select value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all">
+              <select value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all">
                 <option>Tonasa 2/3</option><option>Tonasa 4</option><option>Tonasa 5</option><option>SG Lainnya</option>
               </select>
             </div>

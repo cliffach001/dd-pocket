@@ -45,7 +45,7 @@ function mapSG(row: any): SwitchGear {
     id: row.id,
     name: row.name,
     location: row.location || "",
-    area: row.area || "",
+    unit: row.unit || "",
     status: row.status,
     pic: row.pic || "",
     requester: row.requester || "",
@@ -64,7 +64,7 @@ function mapUser(row: any): User {
     name: row.name,
     email: row.email,
     phone: row.phone || "",
-    area: row.area || "",
+    unit: row.unit || "",
     department: row.department || "",
     username: row.username,
     password: row.password,
@@ -212,7 +212,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         .insert({
           name: data.name,
           location: data.location,
-          area: data.area,
+          unit: data.unit,
           status: data.status,
           pic: data.pic,
           requester: data.requester,
@@ -245,7 +245,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const updateData: any = {};
       if (data.name !== undefined) updateData.name = data.name;
       if (data.location !== undefined) updateData.location = data.location;
-      if (data.area !== undefined) updateData.area = data.area;
+      if (data.unit !== undefined) updateData.unit = data.unit;
       if (data.status !== undefined) updateData.status = data.status;
       if (data.pic !== undefined) updateData.pic = data.pic;
       if (data.requester !== undefined) updateData.requester = data.requester;
@@ -306,7 +306,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         .insert({
           name: data.name,
           email: data.email,
-          area: data.area,
+          unit: data.unit,
           department: data.department,
           username: data.username,
           password: data.password,
@@ -337,7 +337,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (data.name !== undefined) updateData.name = data.name;
       if (data.email !== undefined) updateData.email = data.email;
       if (data.phone !== undefined) updateData.phone = data.phone;
-      if (data.area !== undefined) updateData.area = data.area;
+      if (data.unit !== undefined) updateData.unit = data.unit;
       if (data.department !== undefined) updateData.department = data.department;
       if (data.username !== undefined) updateData.username = data.username;
       if (data.password !== undefined) updateData.password = data.password;

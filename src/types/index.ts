@@ -10,7 +10,7 @@ export interface SwitchGear {
   id: number;
   name: string;
   location: string;
-  area: string;
+  unit: string;
   status: SGStatus;
   pic: string;
   requester: string;
@@ -27,7 +27,7 @@ export interface User {
   name: string;
   email: string;
   phone: string;
-  area: string;
+  unit: string;
   department: string;
   username: string;
   password: string;
