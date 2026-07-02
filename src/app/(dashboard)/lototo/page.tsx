@@ -40,12 +40,12 @@ export default function LototoPage() {
     if (clientId) initGoogleDrive(clientId);
   }, []);
   const [form, setForm] = useState<{
-    name: string; location: string; unit: string; status: SGStatus;
+    name: string; location: string; area: string; status: SGStatus;
     pic: string; requester: string; notifNo: string; lototoNo: string;
     description: string; image: string;
     activeTime: string; finishTime: string;
   }>({
-    name: "", location: "", unit: "Tonasa 2/3", status: "Aktif Lototo",
+    name: "", location: "", area: "Tonasa 2/3", status: "Aktif Lototo",
     pic: "", requester: "", notifNo: "", lototoNo: "", description: "", image: "",
     activeTime: "", finishTime: "",
   });
@@ -74,7 +74,7 @@ export default function LototoPage() {
     setEditId(null);
     setImagePreview("");
     setForm({
-      name: "", location: "", unit: "Tonasa 2/3", status: "Aktif Lototo",
+      name: "", location: "", area: "Tonasa 2/3", status: "Aktif Lototo",
       pic: "", requester: "", notifNo: "", lototoNo: "", description: "", image: "",
       activeTime: getCurrentDatetimeLocal(), finishTime: "",
     });
@@ -337,7 +337,7 @@ export default function LototoPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-gray-600 mb-1">Unit</label>
-              <select value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all">
+              <select value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all">
                 <option>Tonasa 2/3</option><option>Tonasa 4</option><option>Tonasa 5</option><option>SG Lainnya</option>
               </select>
             </div>
