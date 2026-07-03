@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { ImagePlus, X, Loader2, Upload } from "lucide-react";
 import { compressImage } from "@/lib/image";
 import { uploadToGoogleDrive } from "@/lib/google-drive";
@@ -9,20 +9,14 @@ const MAX_FILES = 3;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 interface UploadedImage {
-  /** URL final setelah upload ke Google Drive */
   url: string;
-  /** Data URL sementara untuk preview */
   preview: string;
-  /** Status upload */
   uploading: boolean;
-  /** Nama file asli untuk referensi */
   name: string;
 }
 
 interface Props {
-  /** URL gambar existing (dari database) untuk mode edit */
   existingUrls?: string[];
-  /** Dipanggil dengan array URL final setelah semua upload selesai */
   onImagesChange: (urls: string[]) => void;
 }
 
@@ -40,12 +34,22 @@ export default function ImageUpload({ existingUrls = [], onImagesChange }: Props
 
   const remaining = MAX_FILES - images.filter((img) => img.url).length;
 
+  // Sync perubahan images ke parent — dipisah dari setImages agar tidak
+  // memicu setState parent selama proses render React
+  const prevUrlsRef = useRef<string[]>([]);
+  useEffect(() => {
+    const urls = images.map((img) => img.url).filter(Boolean);
+    if (JSON.stringify(urls) !== JSON.stringify(prevUrlsRef.current)) {
+      prevUrlsRef.current = urls;
+      onImagesChange(urls);
+    }
+  }, [images, onImagesChange]);
+
   const handleFilesSelected = useCallback(async (files: FileList | null) => {
     if (!files || remaining <= 0) return;
 
     const filesArray = Array.from(files).slice(0, remaining);
 
-    // Filter validasi
     const validFiles = filesArray.filter((f) => {
       if (!f.type.startsWith("image/")) return false;
       if (f.size > MAX_FILE_SIZE) return false;
@@ -56,21 +60,14 @@ export default function ImageUpload({ existingUrls = [], onImagesChange }: Props
 
     setUploading(true);
 
-    const newImages: UploadedImage[] = [];
-    const urls: string[] = [];
-
     for (const file of validFiles) {
       const preview = URL.createObjectURL(file);
-      const previewObj: UploadedImage = {
-        url: "",
-        preview,
-        uploading: true,
-        name: file.name,
-      };
-      newImages.push(previewObj);
 
-      // Render dulu supaya lihat preview
-      setImages((prev) => [...prev, previewObj]);
+      // Render preview dulu
+      setImages((prev) => [
+        ...prev,
+        { url: "", preview, uploading: true, name: file.name },
+      ]);
 
       try {
         const compressed = await compressImage(file);
@@ -78,30 +75,21 @@ export default function ImageUpload({ existingUrls = [], onImagesChange }: Props
         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
         const url = await uploadToGoogleDrive(compressed, `${ts}-${safeName}`);
 
-        urls.push(url);
-
         // Update status jadi selesai
         setImages((prev) =>
           prev.map((img) =>
             img.preview === preview ? { ...img, url, uploading: false } : img,
           ),
         );
-      } catch (err: any) {
-        // Upload failed — remove from list
+      } catch {
+        // Upload gagal — hapus dari daftar
         setImages((prev) => prev.filter((img) => img.preview !== preview));
         URL.revokeObjectURL(preview);
       }
     }
 
     setUploading(false);
-
-    // Collect all final URLs
-    setImages((prev) => {
-      const allUrls = prev.map((img) => img.url).filter(Boolean);
-      onImagesChange(allUrls);
-      return prev;
-    });
-  }, [remaining, onImagesChange]);
+  }, [remaining]);
 
   const removeImage = useCallback((index: number) => {
     setImages((prev) => {
@@ -109,15 +97,12 @@ export default function ImageUpload({ existingUrls = [], onImagesChange }: Props
       if (removed?.preview && !removed?.url) {
         URL.revokeObjectURL(removed.preview);
       }
-      const updated = prev.filter((_, i) => i !== index);
-      onImagesChange(updated.map((img) => img.url).filter(Boolean));
-      return updated;
+      return prev.filter((_, i) => i !== index);
     });
-  }, [onImagesChange]);
+  }, []);
 
   return (
     <div className="space-y-3">
-      {/* Preview grid */}
       {images.length > 0 && (
         <div className="grid grid-cols-3 gap-2">
           {images.map((img, i) => (
@@ -127,13 +112,11 @@ export default function ImageUpload({ existingUrls = [], onImagesChange }: Props
                 alt={`Gambar ${i + 1}`}
                 className="w-full h-full object-cover"
               />
-              {/* Uploading overlay */}
               {img.uploading && (
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                   <Loader2 size={20} className="animate-spin text-white" />
                 </div>
               )}
-              {/* Hapus button */}
               {!img.uploading && (
                 <button
                   type="button"
@@ -146,7 +129,6 @@ export default function ImageUpload({ existingUrls = [], onImagesChange }: Props
             </div>
           ))}
 
-          {/* Placeholder untuk upload tambahan */}
           {remaining > 0 && !uploading && (
             <label className="aspect-square rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 bg-gray-50 hover:bg-blue-50 cursor-pointer flex flex-col items-center justify-center gap-1 transition-colors">
               <ImagePlus size={18} className="text-gray-400" />
@@ -164,7 +146,6 @@ export default function ImageUpload({ existingUrls = [], onImagesChange }: Props
         </div>
       )}
 
-      {/* Trigger awal jika belum ada gambar */}
       {images.length === 0 && (
         <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 bg-gray-50 hover:bg-blue-50 transition-colors">
           <Upload size={24} className="text-gray-400 mb-2" />
@@ -185,7 +166,6 @@ export default function ImageUpload({ existingUrls = [], onImagesChange }: Props
         </label>
       )}
 
-      {/* Loading overlay */}
       {uploading && (
         <p className="text-xs text-blue-600 flex items-center gap-1.5">
           <Loader2 size={12} className="animate-spin" />

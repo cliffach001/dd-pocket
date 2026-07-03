@@ -1,11 +1,33 @@
 "use client";
 
 import { useState } from "react";
-import { X, ChevronLeft, ChevronRight, ImageIcon } from "lucide-react";
+import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Props {
-  /** Array URL gambar */
   images: string[];
+}
+
+/**
+ * Konversi URL Google Drive ke format yang bisa ditampilkan di <img>
+ */
+function toImageUrl(url: string): string {
+  // Extract file ID dari berbagai format Google Drive URL
+  const patterns = [
+    /\/d\/([^/?#&]+)/,           // https://drive.google.com/file/d/{fileId}/view
+    /[?&]id=([^&]+)/,             // https://drive.google.com/...?id={fileId}
+    /\/file\/d\/([^/?#&]+)/,      // https://drive.google.com/file/d/{fileId}/
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match?.[1]) {
+      // Pakai thumbnail API Google Drive (cepat, tanpa render HTML)
+      return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
+    }
+  }
+
+  // Bukan Google Drive URL, kembalikan apa adanya
+  return url;
 }
 
 export default function ImageGallery({ images }: Props) {
@@ -15,8 +37,7 @@ export default function ImageGallery({ images }: Props) {
 
   if (validImages.length === 0) return null;
 
-  // Tampilkan thumbnail pertama
-  const first = validImages[0];
+  const first = toImageUrl(validImages[0]);
   const remaining = validImages.length - 1;
 
   return (
@@ -33,8 +54,7 @@ export default function ImageGallery({ images }: Props) {
               alt="Gambar"
               className="w-14 h-14 rounded-lg object-cover border border-gray-200 hover:opacity-80 transition-opacity"
               onError={(e) => {
-                (e.target as HTMLImageElement).src =
-                  "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ccc'><rect width='24' height='24' rx='4'/><text x='12' y='16' text-anchor='middle' font-size='14' fill='%23999'>?</text></svg>";
+                (e.target as HTMLImageElement).style.display = "none";
               }}
             />
           </button>
@@ -56,7 +76,6 @@ export default function ImageGallery({ images }: Props) {
           className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center"
           onClick={() => setLightboxIdx(null)}
         >
-          {/* Close */}
           <button
             type="button"
             onClick={() => setLightboxIdx(null)}
@@ -65,12 +84,10 @@ export default function ImageGallery({ images }: Props) {
             <X size={20} />
           </button>
 
-          {/* Counter */}
           <div className="absolute top-4 left-4 text-white/70 text-sm font-medium">
             {lightboxIdx + 1} / {validImages.length}
           </div>
 
-          {/* Previous */}
           {validImages.length > 1 && (
             <button
               type="button"
@@ -86,15 +103,18 @@ export default function ImageGallery({ images }: Props) {
             </button>
           )}
 
-          {/* Image */}
           <img
-            src={validImages[lightboxIdx]}
+            src={toImageUrl(validImages[lightboxIdx])}
             alt={`Gambar ${lightboxIdx + 1}`}
             className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
             onClick={(e) => e.stopPropagation()}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = `https://drive.google.com/uc?export=view&id=${
+                validImages[lightboxIdx]?.match(/\/d\/([^/?#&]+)/)?.[1] || ""
+              }`;
+            }}
           />
 
-          {/* Next */}
           {validImages.length > 1 && (
             <button
               type="button"
