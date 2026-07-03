@@ -7,7 +7,7 @@ import { getSupabaseClient } from "@/lib/supabase/client";
 import StatCard from "@/components/ui/StatCard";
 import DonutChart from "@/components/ui/DonutChart";
 import LineChart from "@/components/ui/LineChart";
-import { Layers, CheckCircle, Wrench, CheckCheck, BarChart3, Shield, AlertTriangle, Clock } from "lucide-react";
+import { FileText, CheckCircle, Wrench, CheckCheck, BarChart3, Shield, AlertTriangle, Clock } from "lucide-react";
 import type { LaporanP2B } from "@/types";
 
 export default function DashboardPage() {
@@ -68,8 +68,10 @@ export default function DashboardPage() {
   const chartData = useMemo(() => {
     const counts: Record<string, number> = {};
     filteredLaporan.forEach((r) => {
-      const name = r.nama || "Tanpa Nama";
-      counts[name] = (counts[name] || 0) + 1;
+      const pics = r.pic ? r.pic.split(", ").filter(Boolean) : ["Tanpa PIC"];
+      pics.forEach((pic) => {
+        counts[pic] = (counts[pic] || 0) + 1;
+      });
     });
     return { labels: Object.keys(counts), data: Object.values(counts) };
   }, [filteredLaporan]);
@@ -84,10 +86,10 @@ export default function DashboardPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard icon={Layers} label="Total Pekerjaan" value={switchGears.length} subtext="Total semua SG" variant="blue" />
+        <StatCard icon={CheckCheck} label="SG Selesai" value={selesai} subtext="Selesai Lototo/Maintenance" variant="red" />
         <StatCard icon={CheckCircle} label="Lototo Aktif" value={aktif} subtext="Dalam pengamanan" variant="green" href="/lototo" />
         <StatCard icon={Wrench} label="SG Maintenance" value={maintenance} subtext="Sedang maintenance" variant="yellow" href="/sg-maintenance" />
-        <StatCard icon={CheckCheck} label="SG Selesai" value={selesai} subtext="Selesai maintenance" variant="red" />
+        <StatCard icon={FileText} label="Laporan P2B" value={laporanData.length} subtext="Total aktivitas" variant="blue" href="/laporan-p2b" />
       </div>
 
       {/* Chart + Info / Rekap P2B */}
@@ -178,7 +180,7 @@ export default function DashboardPage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-4 sm:px-6 py-4">
           <div className="flex items-center gap-2 mb-3">
             <BarChart3 size={16} className="text-blue-600" />
-            <h3 className="text-sm font-semibold text-gray-700">Pencapaian Personil</h3>
+            <h3 className="text-sm font-semibold text-gray-700">Statistik Inputan Laporan</h3>
           </div>
           <LineChart labels={chartData.labels} data={chartData.data} label="Jumlah Inputan" />
         </div>

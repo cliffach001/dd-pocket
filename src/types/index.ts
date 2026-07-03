@@ -90,6 +90,7 @@ export interface LaporanP2B {
   temuan: string;
   tindak_lanjut: string;
   keterangan: string;
+  image: string;
   nama: string;
   regu: string;
   created_by: string;

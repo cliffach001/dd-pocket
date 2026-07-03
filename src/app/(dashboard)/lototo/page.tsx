@@ -367,13 +367,13 @@ export default function LototoPage() {
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-600 mb-1">Status</label>
-              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as "Aktif Lototo" | "Maintenance" | "Selesai" })} className={`w-full px-3.5 py-2.5 border-2 rounded-xl text-sm focus:bg-white focus:ring-4 outline-none transition-all ${
+              <select value={form.status} onChange={(e) => { const v = e.target.value as "Aktif Lototo" | "Maintenance" | "Selesai"; setForm({ ...form, status: v, finishTime: v !== "Selesai" ? "" : form.finishTime }); }} className={`w-full px-3.5 py-2.5 border-2 rounded-xl text-sm focus:bg-white focus:ring-4 outline-none transition-all ${
                 form.status === "Aktif Lototo" ? "border-red-400 bg-red-50 focus:border-red-500 focus:ring-red-500/20" :
                 form.status === "Maintenance" ? "border-amber-400 bg-amber-50 focus:border-amber-500 focus:ring-amber-500/20" :
                 form.status === "Selesai" ? "border-emerald-400 bg-emerald-50 focus:border-emerald-500 focus:ring-emerald-500/20" :
                 "border-gray-200 bg-gray-50 focus:border-blue-500 focus:ring-blue-500/10"
               }`}>
-                <option value="Aktif Lototo">Aktif Lototo</option><option value="Maintenance">Maintenance</option><option value="Selesai">Selesai</option>
+                <option value="Aktif Lototo">Aktif Lototo (Rack-Out)</option><option value="Maintenance">Maintenance</option><option value="Selesai">Selesai (Rack-In)</option>
               </select>
             </div>
           </div>

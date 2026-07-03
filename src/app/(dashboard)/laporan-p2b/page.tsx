@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import DataTable from "@/components/ui/DataTable";
 import { downloadPdfMulti } from "@/lib/pdf";
-import { isInRange, formatPeriod, toIndonesianDate } from "@/lib/date";
-import { Plus, Edit3, Trash2, Loader2, Send, Calendar, Download, User, Activity, BarChart3 } from "lucide-react";
+import { isInRange, formatPeriod, toIndonesianDate, getCurrentDatetimeLocal } from "@/lib/date";
+import { Plus, Edit3, Trash2, Loader2, Send, Calendar, Download, User, Activity, BarChart3, X } from "lucide-react";
+import { compressImage } from "@/lib/image";
+import { initGoogleDrive, uploadToGoogleDrive } from "@/lib/google-drive";
 import LineChart from "@/components/ui/LineChart";
 import type { LaporanP2B, UnitPengaturan } from "@/types";
 
@@ -58,18 +60,62 @@ function UnitPindahDropdown({ unitPengaturan, value, onChange }: { unitPengatura
   );
 }
 
+function PicDropdown({ users, value, onChange }: { users: { id: number; name: string }[]; value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const selected = value ? value.split(", ").filter(Boolean) : [];
+
+  const toggle = (name: string) => {
+    const idx = selected.indexOf(name);
+    if (idx >= 0) selected.splice(idx, 1);
+    else selected.push(name);
+    onChange(selected.join(", "));
+  };
+
+  return (
+    <div className="relative">
+      <button type="button" onClick={() => setOpen(!open)}
+        className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm text-left focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+      >
+        {selected.length > 0
+          ? <span className="text-gray-900">{selected.length} PIC dipilih</span>
+          : <span className="text-gray-400">Pilih PIC...</span>}
+        <span className="float-right mt-0.5">{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto border border-gray-200 rounded-xl bg-white shadow-lg p-1.5 space-y-0.5">
+            {users.map((u) => {
+              const checked = selected.includes(u.name);
+              return (
+                <label key={u.id} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-blue-50 cursor-pointer text-sm">
+                  <input type="checkbox" checked={checked} onChange={() => toggle(u.name)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                  {u.name}
+                </label>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+
 function formatDate(iso: string) {
   if (!iso) return "-";
-  const d = new Date(iso);
-  return d.toLocaleDateString("id-ID", {
-    day: "numeric", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  });
+  // Abaikan timezone, ekstrak YYYY-MM-DDTHH:mm langsung dari string
+  const clean = iso.replace(/[Zz].*$/, "").replace(/[+-]\d{2}:?\d{2}$/, "").trim();
+  const m = clean.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!m) return "-";
+  const [, y, month, d, hh, mm] = m;
+  return `${parseInt(d)} ${MONTHS[parseInt(month) - 1]} ${y} ${hh}:${mm}`;
 }
 
 function emptyForm(user?: { name: string; regu: string }): Omit<LaporanP2B, "id" | "created_at" | "updated_at" | "created_by"> {
   return {
-    tanggal_jam: new Date().toISOString().slice(0, 16),
+    tanggal_jam: getCurrentDatetimeLocal(),
     lokasi: "",
     level_tegangan: "",
     kondisi: "",
@@ -77,11 +123,12 @@ function emptyForm(user?: { name: string; regu: string }): Omit<LaporanP2B, "id"
     unit_pindah: "",
     aktifitas: "",
     area: "",
-    pic: "",
+    pic: user?.name || "",
     kegiatan: "Pengaturan Beban",
     temuan: "",
     tindak_lanjut: "",
     keterangan: "",
+    image: "",
     nama: user?.name || "",
     regu: user?.regu || "",
   };
@@ -102,6 +149,17 @@ export default function LaporanP2BPage() {
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const [imageLoading, setImageLoading] = useState(false);
+  const [uploadingDrive, setUploadingDrive] = useState(false);
+  const [lightboxImg, setLightboxImg] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Init Google Drive
+  useEffect(() => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (clientId) initGoogleDrive(clientId);
+  }, []);
 
   // Filter state — default ke bulan berjalan
   const fmtLocal = (d: Date) => {
@@ -144,6 +202,21 @@ export default function LaporanP2BPage() {
       if (data) setUnitPengaturan(data);
     };
     fetchUnitPengaturan();
+  }, []);
+
+  // ── Users untuk multi-select PIC ──
+  const [picUsers, setPicUsers] = useState<{ id: number; name: string }[]>([]);
+  useEffect(() => {
+    const fetchPicUsers = async () => {
+      const supabase = getSupabaseClient();
+      const { data } = await supabase
+        .from("users")
+        .select("id, name")
+        .in("role", ["Admin", "Supervisor", "Operator"])
+        .order("name");
+      if (data) setPicUsers(data);
+    };
+    fetchPicUsers();
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -216,6 +289,27 @@ export default function LaporanP2BPage() {
     try {
       const supabase = getSupabaseClient();
 
+      // Upload gambar baru (base64) ke Google Drive
+      let imageUrl = form.image;
+      if (imageUrl && imageUrl.startsWith("data:")) {
+        if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+          alert("GOOGLE_CLIENT_ID belum diatur di .env.local");
+          setSaving(false);
+          return;
+        }
+        setUploadingDrive(true);
+        try {
+          const ts = Date.now();
+          const name = `P2B_${user?.name || "unknown"}_${ts}`;
+          imageUrl = await uploadToGoogleDrive(imageUrl, name);
+        } catch (err: any) {
+          alert("Gagal upload gambar ke Google Drive: " + (err.message || err));
+          setUploadingDrive(false);
+          return;
+        }
+        setUploadingDrive(false);
+      }
+
       const updateData: any = {
         tanggal_jam: form.tanggal_jam,
         lokasi: form.lokasi,
@@ -230,6 +324,7 @@ export default function LaporanP2BPage() {
         temuan: form.temuan || "",
         tindak_lanjut: form.tindak_lanjut || "",
         keterangan: form.keterangan || "",
+        image: imageUrl,
         nama: user?.name || "",
         regu: user?.regu || "",
         created_by: user?.name || "",
@@ -260,6 +355,46 @@ export default function LaporanP2BPage() {
       alert("Gagal menyimpan data: " + (errObj?.message || errObj?.error_description || JSON.stringify(errObj).slice(0, 200)));
     } finally {
       setSaving(false);
+    }
+  };
+
+  // ── Image Upload ──
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageLoading(true);
+    try {
+      const compressed = await compressImage(file);
+      setForm(prev => ({ ...prev, image: compressed }));
+      setImagePreview(compressed);
+    } catch {
+      alert("Gagal memproses gambar");
+    }
+    setImageLoading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeImage = () => {
+    setForm(prev => ({ ...prev, image: "" }));
+    setImagePreview("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const getDrivePreviewUrl = (url: string) => {
+    const match = url.match(/[?&]id=([^&]+)/) || url.match(/\/d\/([^/]+)/);
+    const fileId = match?.[1];
+    return fileId
+      ? `https://drive.google.com/file/d/${fileId}/preview`
+      : null;
+  };
+
+  const handleImageClick = (r: LaporanP2B) => {
+    if (!r.image) return;
+    if (r.image.includes("drive.google.com")) {
+      const previewUrl = getDrivePreviewUrl(r.image);
+      if (previewUrl) setLightboxImg(previewUrl);
+    } else {
+      setLightboxImg(r.image);
     }
   };
 
@@ -294,15 +429,18 @@ export default function LaporanP2BPage() {
       temuan: item.temuan || "",
       tindak_lanjut: item.tindak_lanjut || "",
       keterangan: item.keterangan || "",
+		image: item.image || "",
       nama: item.nama || user?.name || "",
       regu: item.regu || user?.regu || "",
     });
+	setImagePreview(item.image || "");
     setShowForm(true);
   };
 
   // ── Open add form ──
   const openAdd = () => {
     setEditing(null);
+		setImagePreview("");
     setForm(emptyForm(user || undefined));
     setShowForm(true);
   };
@@ -340,6 +478,7 @@ Keterangan : _${r.keterangan || "-"}_`;
 _Seksi Pengaturan Beban_
 
 Kegiatan : _${r.kegiatan}_
+Tanggal Jam : _${formatDate(r.tanggal_jam)}_
 ${detail}
 Nama : _${r.nama}_
 Regu : _${r.regu}_
@@ -469,6 +608,15 @@ _Dibuat oleh ${user?.name || "-"}_`;
   const temuanCol = { key: "temuan", header: "Temuan", render: (r: LaporanP2B) => r.temuan || "-" };
   const tindakLanjutCol = { key: "tindak_lanjut", header: "Tindak Lanjut", render: (r: LaporanP2B) => r.tindak_lanjut || "-" };
   const keteranganCol = { key: "keterangan", header: "Keterangan", render: (r: LaporanP2B) => r.keterangan || "-" };
+  const gambarCol = {
+    key: "image", header: "Gambar", render: (r: LaporanP2B) => r.image ? (
+      <button onClick={() => handleImageClick(r)} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600 cursor-pointer hover:bg-blue-100 transition-colors">
+        Lihat
+      </button>
+    ) : (
+      <span className="text-xs text-gray-300">—</span>
+    ),
+  };
   const namaCol = { key: "nama", header: "Nama", render: (r: LaporanP2B) => r.nama || "-" };
   const reguCol = { key: "regu", header: "Regu", render: (r: LaporanP2B) => r.regu || "-" };
 
@@ -535,6 +683,7 @@ _Dibuat oleh ${user?.name || "-"}_`;
     unitPindahCol,
     picCol,
     keteranganCol,
+    gambarCol,
     namaCol,
     reguCol,
     waCol,
@@ -550,6 +699,7 @@ _Dibuat oleh ${user?.name || "-"}_`;
     tindakLanjutCol,
     picCol,
     keteranganCol,
+    gambarCol,
     namaCol,
     reguCol,
     waCol,
@@ -562,6 +712,7 @@ _Dibuat oleh ${user?.name || "-"}_`;
     aktifitasCol,
     picCol,
     keteranganCol,
+    gambarCol,
     namaCol,
     reguCol,
     waCol,
@@ -576,8 +727,10 @@ _Dibuat oleh ${user?.name || "-"}_`;
   const chartData = useMemo(() => {
     const counts: Record<string, number> = {};
     filtered.forEach((r) => {
-      const name = r.nama || "Tanpa Nama";
-      counts[name] = (counts[name] || 0) + 1;
+      const pics = r.pic ? r.pic.split(", ").filter(Boolean) : ["Tanpa PIC"];
+      pics.forEach((pic) => {
+        counts[pic] = (counts[pic] || 0) + 1;
+      });
     });
     return { labels: Object.keys(counts), data: Object.values(counts) };
   }, [filtered]);
@@ -672,7 +825,7 @@ _Dibuat oleh ${user?.name || "-"}_`;
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-4 sm:px-6 py-4">
         <div className="flex items-center gap-2 mb-3">
           <BarChart3 size={16} className="text-blue-600" />
-          <h3 className="text-sm font-semibold text-gray-700">Pencapaian per Nama</h3>
+          <h3 className="text-sm font-semibold text-gray-700">Statistik Inputan Laporan</h3>
         </div>
         <LineChart labels={chartData.labels} data={chartData.data} label="Jumlah Inputan" />
       </div>
@@ -815,7 +968,7 @@ _Dibuat oleh ${user?.name || "-"}_`;
               {/* PIC */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">PIC *</label>
-                <input type="text" value={form.pic} onChange={(e) => setForm({ ...form, pic: e.target.value })} className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all" placeholder="Nama PIC" />
+                <PicDropdown users={picUsers} value={form.pic} onChange={(v) => setForm({ ...form, pic: v })} />
               </div>
 
               {/* Temuan & Tindak Lanjut — hanya tampil jika Inspeksi */}
@@ -838,6 +991,28 @@ _Dibuat oleh ${user?.name || "-"}_`;
                 <textarea value={form.keterangan} onChange={(e) => setForm({ ...form, keterangan: e.target.value })} rows={2} className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none" placeholder="Keterangan" />
               </div>
 
+              {/* Upload Gambar */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Upload Gambar</label>
+                <div className="flex items-center gap-3">
+                  <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="block w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors cursor-pointer" />
+                  {imageLoading && (
+                    <svg className="animate-spin h-5 w-5 text-blue-600 flex-shrink-0" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  )}
+                </div>
+                {imagePreview && (
+                  <div className="relative mt-3 inline-block">
+                    <img src={imagePreview} alt="Preview" className="h-32 w-auto rounded-xl border border-gray-200 object-cover" />
+                    <button type="button" onClick={removeImage} className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors" title="Hapus gambar">
+                      <X size={12} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {/* Nama & Regu — read-only, dari user login */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -854,11 +1029,31 @@ _Dibuat oleh ${user?.name || "-"}_`;
             {/* Footer */}
             <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3">
               <button onClick={() => { setShowForm(false); setEditing(null); }} className="px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Batal</button>
-              <button onClick={handleSave} disabled={saving} className="px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-50">
-                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                {editing ? "Simpan" : "Tambah"}
+              <button onClick={handleSave} disabled={saving || uploadingDrive} className="px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-50">
+                {saving || uploadingDrive ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {uploadingDrive ? "Mengupload..." : editing ? "Simpan" : "Tambah"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightboxImg && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setLightboxImg(null)}>
+          <div className="relative max-w-4xl max-h-[90vh] w-full">
+            {lightboxImg.includes("/preview") ? (
+              <iframe
+                src={lightboxImg}
+                className="w-full h-[80vh] rounded-xl shadow-2xl"
+                allow="autoplay"
+              />
+            ) : (
+              <img src={lightboxImg} alt="Gambar" className="max-w-full max-h-[90vh] rounded-xl shadow-2xl mx-auto" />
+            )}
+            <button onClick={() => setLightboxImg(null)} className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center text-gray-600 hover:text-gray-900 transition-colors">
+              <X size={16} />
+            </button>
           </div>
         </div>
       )}

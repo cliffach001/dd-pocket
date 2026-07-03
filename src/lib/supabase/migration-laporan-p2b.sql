@@ -27,6 +27,9 @@ ALTER TABLE laporan_p2b ADD COLUMN IF NOT EXISTS level_tegangan TEXT NOT NULL DE
 ALTER TABLE laporan_p2b ADD COLUMN IF NOT EXISTS unit_pindah TEXT NOT NULL DEFAULT '';
 ALTER TABLE laporan_p2b ADD COLUMN IF NOT EXISTS aktifitas TEXT NOT NULL DEFAULT '';
 
+-- Kolom untuk upload gambar
+ALTER TABLE laporan_p2b ADD COLUMN IF NOT EXISTS image TEXT NOT NULL DEFAULT '';
+
 -- Unit Pengaturan — daftar unit untuk dropdown Unit Pindah
 CREATE TABLE IF NOT EXISTS unit_pengaturan (
   id BIGSERIAL PRIMARY KEY,
