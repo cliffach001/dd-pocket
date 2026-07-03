@@ -5,10 +5,23 @@ import { useData } from "@/context/DataContext";
 import StatCard from "@/components/ui/StatCard";
 import DataTable from "@/components/ui/DataTable";
 import StatusBadge from "@/components/ui/StatusBadge";
+import ImageGallery from "@/components/ui/ImageGallery";
+
 import { SwitchGear } from "@/types";
 import { Server, Image as ImageIcon, X } from "lucide-react";
 
 const UNITS = ["Tonasa 2/3", "Tonasa 4", "Tonasa 5", "SG Lainnya"];
+
+
+/** Ambil URL gambar dari field images (JSON) atau image (single) */
+function getImages(item: SwitchGear): string[] {
+  try {
+    const parsed = JSON.parse(item.images || "[]");
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : item.image ? [item.image] : [];
+  } catch {
+    return item.image ? [item.image] : [];
+  }
+}
 
 export default function SwitchGearPage() {
   const { switchGears } = useData();
@@ -27,13 +40,10 @@ export default function SwitchGearPage() {
     { key: "requester", header: "Peminta", render: (s: SwitchGear) => s.requester },
     { key: "activeTime", header: "Waktu Aktif", render: (s: SwitchGear) => s.activeTime, className: "text-gray-500" },
     {
-      key: "image", header: "Gambar", render: (s: SwitchGear) => s.image ? (
-        <button onClick={() => setLightboxImg(s.image)} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600 cursor-pointer hover:bg-blue-100 transition-colors">
-          <ImageIcon size={12} /> Lihat
-        </button>
-      ) : (
-        <span className="text-xs text-gray-300">—</span>
-      ),
+      key: "image", header: "Gambar", render: (s: SwitchGear) => {
+        const imgs = getImages(s);
+        return imgs.length > 0 ? <ImageGallery images={imgs} /> : <span className="text-xs text-gray-300">—</span>;
+      },
     },
     { key: "description", header: "Keterangan", render: (s: SwitchGear) => (
       <span className="truncate max-w-[150px] block" title={s.description}>{s.description}</span>
