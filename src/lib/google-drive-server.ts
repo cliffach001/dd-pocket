@@ -56,6 +56,39 @@ async function getAuthClient() {
 }
 
 /**
+ * Tandai refresh token sebagai expired di database Supabase
+ */
+async function setTokenExpired() {
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    );
+    await supabase.from("app_config").upsert(
+      { key: "google_drive_token_expired", value: "true" },
+      { onConflict: "key" },
+    );
+  } catch {
+    // silent — tidak kritikal
+  }
+}
+
+/**
+ * Cek apakah error dari Google berarti token expired/invalid
+ */
+function isTokenError(error: any): boolean {
+  const msg = String(error?.message || error || "").toLowerCase();
+  return (
+    msg.includes("invalid_grant") ||
+    msg.includes("token expired") ||
+    msg.includes("refresh_token") ||
+    msg.includes("unauthorized") ||
+    msg.includes("auth error") ||
+    msg.includes("401")
+  );
+}
+
+/**
  * Upload file ke Google Drive menggunakan OAuth refresh token
  * (menggunakan akun Google yang sudah disetup di /admin/google-setup)
  * @param buffer - File buffer
@@ -71,35 +104,43 @@ export async function uploadToDrive(
   const auth = await getAuthClient();
   const drive = google.drive({ version: "v3", auth });
 
-  // Upload file
-  const response = await drive.files.create({
-    requestBody: {
-      name: fileName,
-      // Upload ke root My Drive (tidak pakai Shared Drive)
-    },
-    media: {
-      mimeType,
-      body: Readable.from(buffer),
-    },
-    fields: "id,webViewLink",
-  });
+  try {
+    // Upload file
+    const response = await drive.files.create({
+      requestBody: {
+        name: fileName,
+        // Upload ke root My Drive (tidak pakai Shared Drive)
+      },
+      media: {
+        mimeType,
+        body: Readable.from(buffer),
+      },
+      fields: "id,webViewLink",
+    });
 
-  const fileId = response.data.id;
-  if (!fileId) {
-    throw new Error("Gagal upload ke Google Drive — tidak mendapat file ID");
+    const fileId = response.data.id;
+    if (!fileId) {
+      throw new Error("Gagal upload ke Google Drive — tidak mendapat file ID");
+    }
+
+    // Set permission: anyone with link can view
+    await drive.permissions.create({
+      fileId,
+      requestBody: {
+        role: "reader",
+        type: "anyone",
+      },
+    });
+
+    return (
+      response.data.webViewLink ||
+      `https://drive.google.com/file/d/${fileId}/view`
+    );
+  } catch (error: any) {
+    // Jika error karena token expired, catat di database
+    if (isTokenError(error)) {
+      await setTokenExpired();
+    }
+    throw error;
   }
-
-  // Set permission: anyone with link can view
-  await drive.permissions.create({
-    fileId,
-    requestBody: {
-      role: "reader",
-      type: "anyone",
-    },
-  });
-
-  return (
-    response.data.webViewLink ||
-    `https://drive.google.com/file/d/${fileId}/view`
-  );
 }

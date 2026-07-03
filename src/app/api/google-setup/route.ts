@@ -3,15 +3,32 @@ import { createClient } from "@supabase/supabase-js";
 
 /**
  * GET /api/google-setup
- * Cek apakah konfigurasi Google Drive sudah siap.
+ * Cek apakah konfigurasi Google Drive sudah siap dan status token.
  */
 export async function GET() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
+  let tokenExpired = false;
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    );
+    const { data } = await supabase
+      .from("app_config")
+      .select("value")
+      .eq("key", "google_drive_token_expired")
+      .single();
+    tokenExpired = data?.value === "true";
+  } catch {
+    // ignore
+  }
+
   return NextResponse.json({
     configured: !!(clientId && clientSecret),
     clientId: clientId || null,
+    tokenExpired,
   });
 }
 
@@ -94,6 +111,12 @@ export async function POST(request: NextRequest) {
         { status: 500 },
       );
     }
+
+    // Reset status expired (kalau sebelumnya expired)
+    await supabase.from("app_config").upsert(
+      { key: "google_drive_token_expired", value: "false" },
+      { onConflict: "key" },
+    );
 
     return NextResponse.json({ ok: true });
   } catch (error: any) {
