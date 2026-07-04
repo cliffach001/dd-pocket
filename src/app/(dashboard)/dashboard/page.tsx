@@ -88,10 +88,10 @@ export default function DashboardPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard icon={CheckCheck} label="SG Selesai" value={selesai} subtext="Selesai Lototo/Maintenance" variant="red" />
+        <StatCard icon={CheckCheck} label="Total SG Selesai" value={selesai} subtext="Selesai Lototo/Maintenance" variant="red" />
         <StatCard icon={CheckCircle} label="Lototo Aktif" value={aktif} subtext="Dalam pengamanan" variant="green" href="/lototo" />
         <StatCard icon={Wrench} label="SG Maintenance" value={maintenance} subtext="Sedang maintenance" variant="yellow" href="/sg-maintenance" />
-        <StatCard icon={FileText} label="Laporan P2B" value={laporanData.length} subtext="Total aktivitas" variant="blue" href="/laporan-p2b" />
+        {!isVisitor && <StatCard icon={FileText} label="Laporan P2B" value={laporanData.length} subtext="Total aktivitas" variant="blue" href="/laporan-p2b" />}
       </div>
 
       {/* Chart + Info / Rekap P2B */}

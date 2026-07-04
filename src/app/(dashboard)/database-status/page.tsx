@@ -6,7 +6,6 @@ import { useAuth } from "@/context/AuthContext";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { Database, CheckCircle, XCircle, Loader, RefreshCw, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-
 interface TableStatus {
   name: string;
   status: "checking" | "connected" | "error";

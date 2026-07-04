@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { getInitials, roleBadgeClass } from "@/lib/utils";
@@ -10,17 +9,9 @@ import {
   KeyRound, Shield, Save, X, CheckCircle, Lock, Users as UsersIcon,
 } from "lucide-react";
 import Modal from "@/components/ui/Modal";
-
 export default function ProfilPage() {
   const { user, refreshUser } = useAuth();
   const { updateUser, createApproval } = useData();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (user?.role === "Visitor") {
-      router.replace("/dashboard");
-    }
-  }, [user, router]);
 
   if (user?.role === "Visitor") return null;
 
@@ -289,16 +280,11 @@ export default function ProfilPage() {
       </div>
 
       {/* Regu Team — Full Width */}
-      {(user.role === "Admin" || user.role === "Manager") && (
-        <div className="space-y-4">
-          {["A", "B", "C", "D"].map((r) => (
-            <ReguTeam key={r} regu={r} />
-          ))}
-        </div>
-      )}
-      {(user.role === "Supervisor" || user.role === "Operator") && user.regu && (
-        <ReguTeam regu={user.regu} />
-      )}
+      <div className="space-y-4">
+        {["A", "B", "C", "D", "Dayshift"].map((r) => (
+          <ReguTeam key={r} regu={r} />
+        ))}
+      </div>
 
       {/* Reset Password Modal */}
       <Modal
@@ -409,10 +395,9 @@ function ReguTeam({ regu }: { regu: string }) {
             <thead>
               <tr className="border-b border-gray-50 bg-gray-50/50">
                 <th className="text-left px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Nama</th>
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Email</th>
                 <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">No. Handphone</th>
                 <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Unit Kerja</th>
-                <th className="text-center px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Jabatan</th>
+                <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Departemen</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -426,20 +411,9 @@ function ReguTeam({ regu }: { regu: string }) {
                       <span className="font-semibold text-gray-800">{m.name}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3.5 text-gray-600">{m.email}</td>
                   <td className="px-4 py-3.5 text-gray-600">{m.phone || <span className="text-gray-300">—</span>}</td>
                   <td className="px-4 py-3.5 text-gray-600">{m.unit || <span className="text-gray-300">—</span>}</td>
-                  <td className="px-4 py-3.5 text-center">
-                    <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full ${
-                      m.role === "Supervisor"
-                        ? "bg-cyan-50 text-cyan-700"
-                        : m.role === "Operator"
-                        ? "bg-emerald-50 text-emerald-700"
-                        : "bg-gray-100 text-gray-600"
-                    }`}>
-                      {m.role}
-                    </span>
-                  </td>
+                  <td className="px-4 py-3.5 text-gray-600">{m.department || <span className="text-gray-300">—</span>}</td>
                 </tr>
               ))}
             </tbody>

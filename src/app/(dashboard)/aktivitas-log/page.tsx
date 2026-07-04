@@ -10,7 +10,6 @@ import { ActivityLog } from "@/types";
 import { RefreshCw } from "lucide-react";
 import { downloadPdf } from "@/lib/pdf";
 import { isInRange, formatPeriod } from "@/lib/date";
-
 export default function AktivitasLogPage() {
   const { user } = useAuth();
   const router = useRouter();

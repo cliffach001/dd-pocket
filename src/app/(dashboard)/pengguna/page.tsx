@@ -9,7 +9,6 @@ import Modal from "@/components/ui/Modal";
 import { User, UserRole, UserStatus } from "@/types";
 import { getInitials, roleBadgeClass, statusUserBadgeClass, statusUserDotClass } from "@/lib/utils";
 import { Plus, Eye, EyeOff, CheckCircle, X } from "lucide-react";
-
 export default function PenggunaPage() {
   const { user } = useAuth();
   const router = useRouter();
