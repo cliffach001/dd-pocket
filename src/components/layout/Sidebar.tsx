@@ -2,9 +2,8 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { useState, useEffect } from "react";
 import {
-  LayoutDashboard, Lock, Wrench, Server, FileText, History, Users, ChevronLeft, X, Database, ClipboardList, Settings, AlertTriangle,
+  LayoutDashboard, Lock, Wrench, Server, FileText, History, Users, ChevronLeft, X, Database, ClipboardList,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
@@ -44,16 +43,6 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
   const maintCount = switchGears.filter((s) => s.status === "Maintenance").length;
 
   const isAdmin = role === "Admin";
-  const [tokenExpired, setTokenExpired] = useState(false);
-
-  // Cek status token Google Drive (khusus admin)
-  useEffect(() => {
-    if (!isAdmin) return;
-    fetch("/api/google-setup")
-      .then((r) => r.json())
-      .then((data) => setTokenExpired(data.tokenExpired === true))
-      .catch(() => {});
-  }, [isAdmin]);
 
   const filteredNav = NAV_ITEMS.filter((item) => {
     if (isVisitor && !["/dashboard", "/lototo", "/sg-maintenance", "/switch-gear"].includes(item.href)) return false;
@@ -117,41 +106,10 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
         })}
       </nav>
 
-      {/* Admin: Google Drive Setup */}
       {isAdmin && (
-        <>
-          <div className="px-5 py-2">
-            <div className="border-t border-white/10" />
-          </div>
-          <div className="px-3 pb-3">
-            <Link
-              href="/admin/google-setup"
-              onClick={onMobileClose}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative
-                ${pathname === "/admin/google-setup" ? "bg-blue-600/20 text-white" : "text-white/60 hover:text-white hover:bg-white/5"}`}
-            >
-              {tokenExpired ? (
-                <AlertTriangle size={18} className="flex-shrink-0 text-yellow-400" />
-              ) : (
-                <Settings size={18} className="flex-shrink-0" />
-              )}
-              {!collapsed && (
-                <>
-                  <span className="whitespace-nowrap">Google Drive</span>
-                  {tokenExpired && (
-                    <span className="ml-auto flex items-center gap-1 text-[10px] text-yellow-400 font-semibold">
-                      <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
-                      Expired
-                    </span>
-                  )}
-                </>
-              )}
-              {pathname === "/admin/google-setup" && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-blue-500 rounded-r-md" />
-              )}
-            </Link>
-          </div>
-        </>
+        <div className="px-3 pb-3">
+          {/* Admin could have extra nav items here */}
+        </div>
       )}
     </>
   );

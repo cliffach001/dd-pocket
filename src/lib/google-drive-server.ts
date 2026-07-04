@@ -2,95 +2,122 @@ import { google } from "googleapis";
 import { Readable } from "stream";
 import { createClient } from "@supabase/supabase-js";
 
-const SCOPES = ["https://www.googleapis.com/auth/drive.file"];
+const SCOPES = ["https://www.googleapis.com/auth/drive"];
 
 /**
- * Ambil refresh token dari database Supabase
+ * Dapatkan auth JWT untuk Service Account (milik Google Cloud, bukan akun pribadi).
+ * Service Account tidak bisa kena blokir seperti akun Gmail biasa.
  */
-async function getRefreshToken(): Promise<string> {
+function getAuthClient() {
+  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  const key = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+
+  if (!email || !key) {
+    throw new Error(
+      "Service Account belum dikonfigurasi. Admin harus setup GOOGLE_SERVICE_ACCOUNT_EMAIL dan GOOGLE_PRIVATE_KEY di .env.local",
+    );
+  }
+
+  return new google.auth.JWT({
+    email,
+    key,
+    scopes: SCOPES,
+  });
+}
+
+/**
+ * Cek apakah Service Account sudah dikonfigurasi di environment variable
+ */
+export function isServiceAccountConfigured(): boolean {
+  return !!(
+    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
+    process.env.GOOGLE_PRIVATE_KEY
+  );
+}
+
+/**
+ * Ambil service account email (untuk ditampilkan di halaman setup)
+ */
+export function getServiceAccountEmail(): string {
+  return process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || "";
+}
+
+/**
+ * Ambil shared folder ID dari database (app_config)
+ */
+export async function getSharedFolderId(): Promise<string | null> {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   );
 
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("app_config")
     .select("value")
-    .eq("key", "google_drive_refresh_token")
+    .eq("key", "google_drive_shared_folder_id")
     .single();
 
-  if (error || !data) {
-    throw new Error(
-      "Refresh token tidak ditemukan. Admin harus setup Google Drive dulu di /admin/google-setup",
-    );
-  }
-
-  return data.value;
+  return data?.value || null;
 }
 
 /**
- * Dapatkan OAuth2 client menggunakan refresh token dari database
+ * Simpan shared folder ID ke database
  */
-async function getAuthClient() {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    throw new Error(
-      "GOOGLE_CLIENT_ID atau GOOGLE_CLIENT_SECRET belum diatur di .env.local",
-    );
-  }
-
-  const refreshToken = await getRefreshToken();
-
-  const auth = new google.auth.OAuth2({
-    clientId,
-    clientSecret,
-  });
-
-  auth.setCredentials({
-    refresh_token: refreshToken,
-  });
-
-  return auth;
-}
-
-/**
- * Tandai refresh token sebagai expired di database Supabase
- */
-async function setTokenExpired() {
-  try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    );
-    await supabase.from("app_config").upsert(
-      { key: "google_drive_token_expired", value: "true" },
-      { onConflict: "key" },
-    );
-  } catch {
-    // silent — tidak kritikal
-  }
-}
-
-/**
- * Cek apakah error dari Google berarti token expired/invalid
- */
-function isTokenError(error: any): boolean {
-  const msg = String(error?.message || error || "").toLowerCase();
-  return (
-    msg.includes("invalid_grant") ||
-    msg.includes("token expired") ||
-    msg.includes("refresh_token") ||
-    msg.includes("unauthorized") ||
-    msg.includes("auth error") ||
-    msg.includes("401")
+export async function saveSharedFolderId(folderId: string): Promise<void> {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
+  await supabase.from("app_config").upsert(
+    { key: "google_drive_shared_folder_id", value: folderId },
+    { onConflict: "key" },
   );
 }
 
 /**
- * Upload file ke Google Drive menggunakan OAuth refresh token
- * (menggunakan akun Google yang sudah disetup di /admin/google-setup)
+ * Hapus shared folder ID dari database (reset)
+ */
+export async function clearSharedFolderId(): Promise<void> {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
+  await supabase
+    .from("app_config")
+    .delete()
+    .eq("key", "google_drive_shared_folder_id");
+}
+
+/**
+ * Verifikasi bahwa Service Account bisa mengakses folder tertentu.
+ * Coba list isi folder — kalau sukses, berarti SA punya akses.
+ *
+ * @param folderId - ID folder Google Drive
+ * @returns true jika akses valid
+ */
+export async function verifyFolderAccess(folderId: string): Promise<boolean> {
+  try {
+    const auth = getAuthClient();
+    const drive = google.drive({ version: "v3", auth });
+
+    // Coba cek folder exist dan SA punya akses baca
+    const result = await drive.files.get({
+      fileId: folderId,
+      fields: "id,name,owners",
+      supportsAllDrives: true,
+    });
+
+    return !!result.data.id;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Upload file ke Google Drive via Service Account.
+ * WAJIB sudah ada shared folder yang dishare ke Service Account oleh akun asli.
+ * File masuk ke folder itu dan menggunakan quota pemilik folder.
+ *
  * @param buffer - File buffer
  * @param fileName - Nama file (disarankan pakai timestamp prefix agar unik)
  * @param mimeType - MIME type file (contoh: image/jpeg)
@@ -101,46 +128,46 @@ export async function uploadToDrive(
   fileName: string,
   mimeType: string,
 ): Promise<string> {
-  const auth = await getAuthClient();
+  const auth = getAuthClient();
   const drive = google.drive({ version: "v3", auth });
 
-  try {
-    // Upload file
-    const response = await drive.files.create({
-      requestBody: {
-        name: fileName,
-        // Upload ke root My Drive (tidak pakai Shared Drive)
-      },
-      media: {
-        mimeType,
-        body: Readable.from(buffer),
-      },
-      fields: "id,webViewLink",
-    });
-
-    const fileId = response.data.id;
-    if (!fileId) {
-      throw new Error("Gagal upload ke Google Drive — tidak mendapat file ID");
-    }
-
-    // Set permission: anyone with link can view
-    await drive.permissions.create({
-      fileId,
-      requestBody: {
-        role: "reader",
-        type: "anyone",
-      },
-    });
-
-    return (
-      response.data.webViewLink ||
-      `https://drive.google.com/file/d/${fileId}/view`
+  // Wajib ada shared folder — Service Account tidak punya storage sendiri
+  const folderId = await getSharedFolderId();
+  if (!folderId) {
+    throw new Error(
+      "Folder Google Drive belum dikonfigurasi. Admin harus setup folder bersama di /admin/google-setup",
     );
-  } catch (error: any) {
-    // Jika error karena token expired, catat di database
-    if (isTokenError(error)) {
-      await setTokenExpired();
-    }
-    throw error;
   }
+
+  const response = await drive.files.create({
+    requestBody: {
+      name: fileName,
+      parents: [folderId],
+    },
+    media: {
+      mimeType,
+      body: Readable.from(buffer),
+    },
+    fields: "id,webViewLink",
+    supportsAllDrives: true,
+  });
+
+  const fileId = response.data.id;
+  if (!fileId) {
+    throw new Error("Gagal upload ke Google Drive — tidak mendapat file ID");
+  }
+
+  // Set permission: anyone with link can view
+  await drive.permissions.create({
+    fileId,
+    requestBody: {
+      role: "reader",
+      type: "anyone",
+    },
+  });
+
+  return (
+    response.data.webViewLink ||
+    `https://drive.google.com/file/d/${fileId}/view`
+  );
 }

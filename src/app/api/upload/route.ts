@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { uploadToDrive } from "@/lib/google-drive-server";
+import { uploadToStorage } from "@/lib/storage-server";
 
-export const maxDuration = 30; // Maks 30 detik (Hobby plan)
+export const maxDuration = 30;
 
 /**
  * POST /api/upload
- * Menerima file gambar dari client, upload ke Google Drive via OAuth Refresh Token.
- * Admin harus setup dulu di /admin/google-setup untuk mengikat akun Google.
+ * Menerima file gambar dari client, upload ke Supabase Storage bucket "images".
  *
  * Input: FormData dengan field "file"
  * Output: { url: string }
@@ -47,7 +46,8 @@ export async function POST(request: NextRequest) {
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const fileName = `${timestamp}-${safeName}`;
 
-    const url = await uploadToDrive(buffer, fileName, file.type);
+    // Upload ke Supabase Storage
+    const url = await uploadToStorage(buffer, fileName, file.type);
 
     return NextResponse.json({ url });
   } catch (error: any) {

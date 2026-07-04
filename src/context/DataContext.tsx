@@ -223,6 +223,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           notif_no: data.notifNo,
           lototo_no: data.lototoNo,
           image: data.image,
+          images: data.images,
           description: data.description,
         })
         .select()
@@ -256,6 +257,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (data.notifNo !== undefined) updateData.notif_no = data.notifNo;
       if (data.lototoNo !== undefined) updateData.lototo_no = data.lototoNo;
       if (data.image !== undefined) updateData.image = data.image;
+      if (data.images !== undefined) updateData.images = data.images;
       if (data.description !== undefined) updateData.description = data.description;
 
       const { data: updated, error } = await supabase
@@ -282,6 +284,25 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       const supabase = getSupabaseClient();
       const item = switchGears.find(s => s.id === id);
+
+      // Hapus file gambar dari Supabase Storage dulu (jika ada)
+      if (item) {
+        const imageUrls: string[] = [];
+        try {
+          const parsed = JSON.parse(item.images || "[]");
+          if (Array.isArray(parsed)) imageUrls.push(...parsed);
+        } catch {}
+        if (item.image && !imageUrls.includes(item.image)) imageUrls.push(item.image);
+
+        if (imageUrls.length > 0) {
+          await fetch("/api/storage/delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ urls: imageUrls }),
+          });
+        }
+      }
+
       const { error } = await supabase.from("switch_gears").delete().eq("id", id);
       if (error) throw error;
 
@@ -496,6 +517,33 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
       } else if (approval.action_type === "delete") {
         const tableName = approval.table_name === "users" ? "users" : "switch_gears";
+
+        // Hapus file gambar dari storage dulu jika tabel switch_gears
+        if (tableName === "switch_gears") {
+          const { data: toDelete } = await supabase
+            .from("switch_gears")
+            .select("image, images")
+            .eq("id", approval.record_id)
+            .single();
+
+          if (toDelete) {
+            const imageUrls: string[] = [];
+            try {
+              const parsed = JSON.parse(toDelete.images || "[]");
+              if (Array.isArray(parsed)) imageUrls.push(...parsed);
+            } catch {}
+            if (toDelete.image && !imageUrls.includes(toDelete.image)) imageUrls.push(toDelete.image);
+
+            if (imageUrls.length > 0) {
+              await fetch("/api/storage/delete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ urls: imageUrls }),
+              });
+            }
+          }
+        }
+
         await supabase.from(tableName as "users" | "switch_gears").delete().eq("id", approval.record_id);
       } else if (approval.action_type === "create" && approval.new_data) {
         console.log(">>> APPROVE CREATE:", { table: approval.table_name, new_data: approval.new_data });

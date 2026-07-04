@@ -8,9 +8,22 @@ interface Props {
 }
 
 /**
- * Konversi URL Google Drive ke format yang bisa ditampilkan di <img>
+ * Cek apakah URL adalah Google Drive URL
+ */
+function isGoogleDriveUrl(url: string): boolean {
+  return url.includes("drive.google.com") || url.includes("googleapis.com/drive");
+}
+
+/**
+ * Konversi URL Google Drive ke format thumbnail.
+ * Untuk URL Supabase Storage, langsung pakai URL asli.
  */
 function toImageUrl(url: string): string {
+  if (!isGoogleDriveUrl(url)) {
+    // Supabase Storage atau URL lainnya — langsung pakai
+    return url;
+  }
+
   // Extract file ID dari berbagai format Google Drive URL
   const patterns = [
     /\/d\/([^/?#&]+)/,           // https://drive.google.com/file/d/{fileId}/view
@@ -21,13 +34,27 @@ function toImageUrl(url: string): string {
   for (const pattern of patterns) {
     const match = url.match(pattern);
     if (match?.[1]) {
-      // Pakai thumbnail API Google Drive (cepat, tanpa render HTML)
       return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
     }
   }
 
-  // Bukan Google Drive URL, kembalikan apa adanya
   return url;
+}
+
+/**
+ * Ekstrak file ID Google Drive dari URL (untuk fallback)
+ */
+function extractDriveFileId(url: string): string | undefined {
+  const patterns = [
+    /\/d\/([^/?#&]+)/,
+    /[?&]id=([^&]+)/,
+    /\/file\/d\/([^/?#&]+)/,
+  ];
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match?.[1]) return match[1];
+  }
+  return undefined;
 }
 
 export default function ImageGallery({ images }: Props) {
@@ -109,9 +136,15 @@ export default function ImageGallery({ images }: Props) {
             className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
             onClick={(e) => e.stopPropagation()}
             onError={(e) => {
-              (e.target as HTMLImageElement).src = `https://drive.google.com/uc?export=view&id=${
-                validImages[lightboxIdx]?.match(/\/d\/([^/?#&]+)/)?.[1] || ""
-              }`;
+              const img = e.target as HTMLImageElement;
+              const url = validImages[lightboxIdx];
+              // Fallback hanya untuk Google Drive URL
+              if (isGoogleDriveUrl(url)) {
+                const fileId = extractDriveFileId(url);
+                if (fileId) {
+                  img.src = `https://drive.google.com/uc?export=view&id=${fileId}`;
+                }
+              }
             }}
           />
 

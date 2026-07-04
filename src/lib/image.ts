@@ -1,5 +1,5 @@
 /** Compress image file to base64 data URL */
-export function compressImage(file: File, maxWidth = 1200, quality = 0.85): Promise<string> {
+export function compressImage(file: File, maxWidth = 1200, quality = 0.70): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -20,11 +20,8 @@ export function compressImage(file: File, maxWidth = 1200, quality = 0.85): Prom
         const ctx = canvas.getContext("2d")!;
         ctx.drawImage(img, 0, 0, w, h);
 
-        // Pertahankan format asli: PNG tetap PNG, JPEG tetap JPEG
-        const isPng = file.type === "image/png";
-        const mimeType = isPng ? "image/png" : "image/jpeg";
-        // PNG: tanpa quality (lossless), JPEG: quality 0.85
-        resolve(canvas.toDataURL(mimeType, isPng ? undefined : quality));
+        // Semua format dikompres ke JPEG (termasuk PNG) untuk ukuran kecil
+        resolve(canvas.toDataURL("image/jpeg", quality));
       };
       img.onerror = reject;
       img.src = reader.result as string;

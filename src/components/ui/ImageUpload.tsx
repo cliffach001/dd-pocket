@@ -18,9 +18,10 @@ interface UploadedImage {
 interface Props {
   existingUrls?: string[];
   onImagesChange: (urls: string[]) => void;
+  onUploadingChange?: (uploading: boolean) => void;
 }
 
-export default function ImageUpload({ existingUrls = [], onImagesChange }: Props) {
+export default function ImageUpload({ existingUrls = [], onImagesChange, onUploadingChange }: Props) {
   const [images, setImages] = useState<UploadedImage[]>(
     existingUrls.map((url) => ({
       url,
@@ -59,6 +60,7 @@ export default function ImageUpload({ existingUrls = [], onImagesChange }: Props
     if (validFiles.length === 0) return;
 
     setUploading(true);
+    onUploadingChange?.(true);
 
     for (const file of validFiles) {
       const preview = URL.createObjectURL(file);
@@ -89,6 +91,7 @@ export default function ImageUpload({ existingUrls = [], onImagesChange }: Props
     }
 
     setUploading(false);
+    onUploadingChange?.(false);
   }, [remaining]);
 
   const removeImage = useCallback((index: number) => {

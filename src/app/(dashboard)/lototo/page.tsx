@@ -1,21 +1,20 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useData } from "@/context/DataContext";
 import { useAuth } from "@/context/AuthContext";
 import StatCard from "@/components/ui/StatCard";
 import DataTable from "@/components/ui/DataTable";
 import StatusBadge from "@/components/ui/StatusBadge";
 import ImageGallery from "@/components/ui/ImageGallery";
+import ImageUpload from "@/components/ui/ImageUpload";
 
 import Modal from "@/components/ui/Modal";
 import FilterBar from "@/components/ui/FilterBar";
 import { SwitchGear, SGStatus } from "@/types";
-import { Layers, CheckCircle, Wrench, CheckCheck, Lock, Image as ImageIcon, ListOrdered, X, Loader2 } from "lucide-react";
-import { compressImage } from "@/lib/image";
+import { Layers, CheckCircle, Wrench, CheckCheck, Lock, ListOrdered, Loader2 } from "lucide-react";
 import { downloadPdf } from "@/lib/pdf";
 import { isInRange, formatPeriod, toIndonesianDate, toDatetimeLocal, getCurrentDatetimeLocal } from "@/lib/date";
-import { uploadToGoogleDrive } from "@/lib/google-drive";
 import SupervisorCutiDialog from "@/components/ui/SupervisorCutiDialog";
 
 
@@ -41,12 +40,8 @@ export default function LototoPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>("");
-  const [imageLoading, setImageLoading] = useState(false);
-  const [lightboxImg, setLightboxImg] = useState<string | null>(null);
-  const [uploadingDrive, setUploadingDrive] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingApproval, setPendingApproval] = useState<{
     table_name: string;
     record_id: number;
@@ -89,7 +84,6 @@ export default function LototoPage() {
 
   const openAdd = () => {
     setEditId(null);
-    setImagePreview("");
     setForm({
       name: "", location: "", unit: "Tonasa 2/3", status: "Aktif Lototo",
       pic: "", requester: "", notifNo: "", lototoNo: "", description: "", image: "", images: [],
@@ -109,27 +103,6 @@ export default function LototoPage() {
       finishTime: sg.status === "Selesai" ? (toDatetimeLocal(sg.finishTime) || getCurrentDatetimeLocal()) : "",
     });
     setModalOpen(true);
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImageLoading(true);
-    try {
-      const compressed = await compressImage(file);
-      setForm(prev => ({ ...prev, image: compressed }));
-      setImagePreview(compressed);
-    } catch {
-      alert("Gagal memproses gambar");
-    }
-    setImageLoading(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const removeImage = () => {
-    setForm(prev => ({ ...prev, image: "" }));
-    setImagePreview("");
-    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleDelete = (sg: SwitchGear) => {
@@ -168,6 +141,7 @@ export default function LototoPage() {
     e.preventDefault();
     const payload: any = {
       ...form,
+      image: form.images[0] || "",
       images: form.images,
       activeTime: toIndonesianDate(form.activeTime) || form.activeTime,
       finishTime: form.status === "Selesai" ? (toIndonesianDate(form.finishTime) || form.finishTime) : "",
@@ -205,25 +179,6 @@ export default function LototoPage() {
         }
       }
     setModalOpen(false);
-  };
-
-  const getDrivePreviewUrl = (url: string) => {
-    // Ekstrak file ID dari berbagai format URL Google Drive
-    const match = url.match(/[?&]id=([^&]+)/) || url.match(/\/d\/([^/]+)/);
-    const fileId = match?.[1];
-    return fileId
-      ? `https://drive.google.com/file/d/${fileId}/preview`
-      : null;
-  };
-
-  const handleImageClick = (sg: SwitchGear) => {
-    if (!sg.image) return;
-    if (sg.image.includes("drive.google.com")) {
-      const previewUrl = getDrivePreviewUrl(sg.image);
-      if (previewUrl) setLightboxImg(previewUrl);
-    } else {
-      setLightboxImg(sg.image);
-    }
   };
 
   const columns = [
@@ -332,9 +287,9 @@ export default function LototoPage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         title={editId ? "Edit Switch Gear" : "Tambah Switch Gear"}
-        footer={<button type="submit" form="sgForm" disabled={uploadingDrive} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1.5 disabled:opacity-50">
-          {uploadingDrive ? <Loader2 size={14} className="animate-spin" /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>}
-          {uploadingDrive ? "Mengupload..." : "Simpan"}
+        footer={<button type="submit" form="sgForm" disabled={isUploading} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Simpan
         </button>}
       >
         <form id="sgForm" onSubmit={handleSubmit} className="space-y-4">
@@ -419,55 +374,17 @@ export default function LototoPage() {
             <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all min-h-[70px]" placeholder="Deskripsi pekerjaan..." />
           </div>
 
-          {/* Image Upload */}
+          {/* Image Upload — multi-upload max 3 gambar */}
           <div>
             <label className="block text-xs font-semibold text-gray-600 mb-1">Gambar</label>
-            <div className="flex items-center gap-3">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="block w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors cursor-pointer"
-              />
-              {imageLoading && (
-                <svg className="animate-spin h-5 w-5 text-blue-600 flex-shrink-0" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-              )}
-            </div>
-            {imagePreview && (
-              <div className="relative mt-3 inline-block">
-                <img src={imagePreview} alt="Preview" className="h-32 w-auto rounded-xl border border-gray-200 object-cover" />
-                <button type="button" onClick={removeImage} className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors" title="Hapus gambar">
-                  <X size={12} />
-                </button>
-              </div>
-            )}
+            <ImageUpload
+              existingUrls={form.images}
+              onImagesChange={(urls) => setForm(prev => ({ ...prev, images: urls }))}
+              onUploadingChange={setIsUploading}
+            />
           </div>
         </form>
       </Modal>
-
-      {/* Lightbox */}
-      {lightboxImg && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setLightboxImg(null)}>
-          <div className="relative max-w-4xl max-h-[90vh] w-full">
-            {lightboxImg.includes("/preview") ? (
-              <iframe
-                src={lightboxImg}
-                className="w-full h-[80vh] rounded-xl shadow-2xl"
-                allow="autoplay"
-              />
-            ) : (
-              <img src={lightboxImg} alt="Gambar" className="max-w-full max-h-[90vh] rounded-xl shadow-2xl mx-auto" />
-            )}
-            <button onClick={() => setLightboxImg(null)} className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center text-gray-600 hover:text-gray-900 transition-colors">
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Supervisor Cuti Dialog */}
       <SupervisorCutiDialog

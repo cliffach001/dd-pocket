@@ -125,11 +125,14 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     fetch(request)
       .then((response) => {
-        // Cache response for offline fallback
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(request, clone);
-        });
+        // Hanya cache response GET untuk offline fallback
+        // (Cache API tidak support POST — akan throw error)
+        if (request.method === "GET") {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, clone);
+          });
+        }
         return response;
       })
       .catch(() => {

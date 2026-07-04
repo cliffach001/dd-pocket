@@ -149,6 +149,7 @@ export default function LaporanP2BPage() {
   const [editing, setEditing] = useState<LaporanP2B | null>(null);
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
   // Filter state — default ke bulan berjalan
@@ -342,6 +343,32 @@ export default function LaporanP2BPage() {
   const handleDelete = async (id: number) => {
     try {
       const supabase = getSupabaseClient();
+
+      // Ambil data dulu untuk dapat URL gambar
+      const { data: item } = await supabase
+        .from("laporan_p2b")
+        .select("image, images")
+        .eq("id", id)
+        .single();
+
+      // Hapus file gambar dari storage
+      if (item) {
+        const imageUrls: string[] = [];
+        try {
+          const parsed = JSON.parse(item.images || "[]");
+          if (Array.isArray(parsed)) imageUrls.push(...parsed);
+        } catch {}
+        if (item.image && !imageUrls.includes(item.image)) imageUrls.push(item.image);
+
+        if (imageUrls.length > 0) {
+          await fetch("/api/storage/delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ urls: imageUrls }),
+          });
+        }
+      }
+
       const { error } = await supabase.from("laporan_p2b").delete().eq("id", id);
       if (error) throw error;
       setConfirmDelete(null);
@@ -936,6 +963,7 @@ _Dikirim oleh ${user?.name || "-"}_`;
                 <ImageUpload
                   existingUrls={form.images}
                   onImagesChange={(urls) => setForm(prev => ({ ...prev, images: urls }))}
+                  onUploadingChange={setIsUploading}
                 />
               </div>
 
@@ -955,9 +983,9 @@ _Dikirim oleh ${user?.name || "-"}_`;
             {/* Footer */}
             <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3">
               <button onClick={() => { setShowForm(false); setEditing(null); }} className="px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Batal</button>
-              <button onClick={handleSave} disabled={saving} className="px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-50">
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                {editing ? "Simpan" : "Tambah"}
+              <button onClick={handleSave} disabled={saving || isUploading} className="px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-50">
+                {saving || isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {isUploading ? "Mengupload..." : editing ? "Simpan" : "Tambah"}
               </button>
             </div>
           </div>
