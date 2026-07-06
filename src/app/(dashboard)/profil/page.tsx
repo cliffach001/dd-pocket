@@ -387,6 +387,14 @@ function ReguTeam({ regu }: { regu: string }) {
           <UsersIcon size={24} className="mx-auto mb-2 opacity-50" />
           Belum ada personil
         </div>
+      ) : regu === "Dayshift" ? (
+        <div className="px-6 py-5">
+          <div className="flex flex-wrap gap-3 justify-center">
+            {members.map((m) => (
+              <DayshiftCard key={m.id} user={m} />
+            ))}
+          </div>
+        </div>
       ) : (
         <div className="px-6 py-5 overflow-x-auto">
           {supervisors.map((spv, idx) => {
@@ -449,6 +457,49 @@ function ReguTeam({ regu }: { regu: string }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Card Flat untuk Dayshift ──
+function DayshiftCard({ user }: { user: { id: number; name: string; role: string; phone: string; unit: string; department: string } }) {
+  return (
+    <div className="flex flex-col items-center gap-1.5 px-4 py-3 bg-white rounded-xl border border-gray-200 shadow-sm min-w-[140px]">
+      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm ${
+        user.role === "Supervisor"
+          ? "bg-gradient-to-br from-cyan-500 via-cyan-600 to-blue-700"
+          : "bg-gradient-to-br from-emerald-500 via-emerald-600 to-green-700"
+      }`}>
+        {getInitials(user.name)}
+      </div>
+      <p className="text-xs font-bold text-gray-800 text-center leading-tight">{user.name}</p>
+      <span className={`inline-block text-[9px] font-semibold px-2 py-0.5 rounded-full border ${
+        user.role === "Supervisor"
+          ? "bg-cyan-100 text-cyan-700 border-cyan-200"
+          : "bg-emerald-100 text-emerald-700 border-emerald-200"
+      }`}>
+        {user.role}
+      </span>
+      <div className="w-full mt-1 space-y-0.5">
+        {user.phone && (
+          <div className="flex items-center gap-1 text-[9px] text-gray-500">
+            <Phone size={8} className="shrink-0" />
+            <span className="truncate">{user.phone}</span>
+          </div>
+        )}
+        {user.unit && (
+          <div className="flex items-center gap-1 text-[9px] text-gray-500">
+            <Building2 size={8} className="shrink-0" />
+            <span className="truncate">{user.unit}</span>
+          </div>
+        )}
+        {user.department && (
+          <div className="flex items-center gap-1 text-[9px] text-gray-500">
+            <Building2 size={8} className="shrink-0" />
+            <span className="truncate">{user.department}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

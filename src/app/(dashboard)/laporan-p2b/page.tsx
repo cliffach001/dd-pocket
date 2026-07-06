@@ -520,9 +520,9 @@ _Dikirim oleh ${user?.name || "-"}_`;
     header: "Lokasi",
     render: (r: LaporanP2B) => (
       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-        r.lokasi === "Tonasa 2/3" ? "bg-blue-100 text-blue-700" :
+        r.lokasi === "Tonasa 2/3" ? "bg-orange-100 text-orange-700" :
         r.lokasi === "Tonasa 4" ? "bg-purple-100 text-purple-700" :
-        r.lokasi === "Tonasa 5" ? "bg-green-100 text-green-700" :
+        r.lokasi === "Tonasa 5" ? "bg-blue-100 text-blue-700" :
         "bg-gray-100 text-gray-600"
       }`}>{r.lokasi}</span>
     ),
@@ -545,10 +545,8 @@ _Dikirim oleh ${user?.name || "-"}_`;
     render: (r: LaporanP2B) =>
       r.posisi_power ? (
         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-          r.posisi_power === "BTG" ? "bg-green-100 text-green-700" :
-          r.posisi_power === "PLN" ? "bg-yellow-100 text-yellow-700" :
-          r.posisi_power === "PLN ke BTG" ? "bg-blue-100 text-blue-700" :
-          r.posisi_power === "BTG ke PLN" ? "bg-purple-100 text-purple-700" :
+          r.posisi_power === "BTG" || r.posisi_power === "PLN ke BTG" ? "bg-green-100 text-green-700" :
+          r.posisi_power === "PLN" || r.posisi_power === "BTG ke PLN" ? "bg-yellow-100 text-yellow-700" :
           "bg-gray-100 text-gray-600"
         }`}>{r.posisi_power}</span>
       ) : (
@@ -689,6 +687,29 @@ _Dikirim oleh ${user?.name || "-"}_`;
   const inspeksiData = filtered.filter((r) => r.kegiatan === "Inspeksi");
   const lainnyaData = filtered.filter((r) => r.kegiatan === "Lainnya");
 
+  // ── Rekap Laporan per Personil ──
+  const rekapMap = new Map<string, { pengaturanBeban: number; inspeksi: number; lainnya: number }>();
+  filtered.forEach((r) => {
+    const pics = r.pic ? r.pic.split(", ").filter(Boolean) : ["Tanpa PIC"];
+    pics.forEach((pic) => {
+      if (!rekapMap.has(pic)) {
+        rekapMap.set(pic, { pengaturanBeban: 0, inspeksi: 0, lainnya: 0 });
+      }
+      const entry = rekapMap.get(pic)!;
+      if (r.kegiatan === "Pengaturan Beban") entry.pengaturanBeban++;
+      else if (r.kegiatan === "Inspeksi") entry.inspeksi++;
+      else if (r.kegiatan === "Lainnya") entry.lainnya++;
+    });
+  });
+
+  const rekapRows = Array.from(rekapMap.entries())
+    .map(([nama, counts]) => ({ nama, ...counts }))
+    .sort((a, b) => a.nama.localeCompare(b.nama));
+
+  const rekapTotalPB = rekapRows.reduce((sum, r) => sum + r.pengaturanBeban, 0);
+  const rekapTotalInspeksi = rekapRows.reduce((sum, r) => sum + r.inspeksi, 0);
+  const rekapTotalLainnya = rekapRows.reduce((sum, r) => sum + r.lainnya, 0);
+
   // ── Chart: jumlah inputan per nama ──
   const chartData = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -809,6 +830,13 @@ _Dikirim oleh ${user?.name || "-"}_`;
             columns={pengaturanBebanColumns}
             data={pengaturanBebanData}
             searchPlaceholder="Cari data Pengaturan Beban..."
+            getRowClass={(r) =>
+              r.posisi_power === "BTG" || r.posisi_power === "PLN ke BTG"
+                ? "hover:bg-green-100"
+                : r.posisi_power === "PLN" || r.posisi_power === "BTG ke PLN"
+                ? "hover:bg-yellow-100"
+                : ""
+            }
             actions={
               canEdit && (
                 <button
@@ -833,6 +861,32 @@ _Dikirim oleh ${user?.name || "-"}_`;
             columns={lainnyaColumns}
             data={lainnyaData}
             searchPlaceholder="Cari data Lainnya..."
+          />
+
+          {/* Rekap Laporan Harian P2B */}
+          <DataTable
+            title={
+              <div className="flex items-center justify-between w-full">
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  Rekap Laporan Harian P2B
+                </span>
+                {rekapRows.length > 0 && (
+                  <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full ml-auto">
+                    Total: {rekapTotalPB + rekapTotalInspeksi + rekapTotalLainnya} Laporan
+                  </span>
+                )}
+              </div>
+            }
+            columns={[
+              { key: "nama", header: "Nama Personil", render: (r: { nama: string; pengaturanBeban: number; inspeksi: number; lainnya: number }) => <span className="font-medium text-gray-800">{r.nama}</span> },
+              { key: "pengaturanBeban", header: "Pengaturan Beban", render: (r: { nama: string; pengaturanBeban: number; inspeksi: number; lainnya: number }) => <span className="text-center block">{r.pengaturanBeban}</span> },
+              { key: "inspeksi", header: "Inspeksi", render: (r: { nama: string; pengaturanBeban: number; inspeksi: number; lainnya: number }) => <span className="text-center block">{r.inspeksi}</span> },
+              { key: "lainnya", header: "Lainnya", render: (r: { nama: string; pengaturanBeban: number; inspeksi: number; lainnya: number }) => <span className="text-center block">{r.lainnya}</span> },
+            ]}
+            data={rekapRows}
+            searchable={true}
+            searchPlaceholder="Cari nama personil..."
           />
         </div>
       )}

@@ -20,6 +20,7 @@ interface Props<T> {
   actions?: ReactNode;
   onRowClick?: (item: T) => void;
   maxHeight?: string;
+  getRowClass?: (item: T) => string;
 }
 
 const ROWS_OPTIONS = [10, 20, 30, 50, 100];
@@ -33,6 +34,7 @@ export default function DataTable<T>({
   actions,
   onRowClick,
   maxHeight,
+  getRowClass,
 }: Props<T>) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -107,7 +109,7 @@ export default function DataTable<T>({
       <div className="overflow-x-auto" style={maxHeight ? { maxHeight, overflowY: "auto" } : undefined}>
         <table className="w-full table-auto">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-100">
+            <tr className="bg-gray-100 border-b border-gray-200">
               {columns.map((col) => (
                 <th
                   key={col.key}
@@ -135,7 +137,7 @@ export default function DataTable<T>({
                 <tr
                   key={idx}
                   onClick={() => onRowClick?.(item)}
-                  className={`border-t border-gray-50 transition-colors hover:bg-gray-50 ${onRowClick ? "cursor-pointer" : ""}`}
+                  className={`border-t border-gray-100 transition-colors hover:bg-gray-50 ${onRowClick ? "cursor-pointer" : ""} ${getRowClass?.(item) || ""}`}
                 >
                   {columns.map((col) => (
                     <td
